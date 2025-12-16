@@ -28,28 +28,31 @@ const ValidarEntrada = () => {
     setEscaneando(true);
     setResultado(null);
 
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-      "qr-reader",
-      { 
-        fps: 10, 
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
-      },
-      false
-    );
+    // Wait for DOM to be ready
+    setTimeout(() => {
+      const html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-reader",
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0
+        },
+        false
+      );
 
-    html5QrcodeScanner.render(
-      async (decodedText) => {
-        await validarQR(decodedText);
-        html5QrcodeScanner.clear();
-        setEscaneando(false);
-      },
-      (error) => {
-        console.log(error);
-      }
-    );
+      html5QrcodeScanner.render(
+        async (decodedText) => {
+          await validarQR(decodedText);
+          html5QrcodeScanner.clear();
+          setEscaneando(false);
+        },
+        (error) => {
+          console.log(error);
+        }
+      );
 
-    setScanner(html5QrcodeScanner);
+      setScanner(html5QrcodeScanner);
+    }, 100);
   };
 
   const validarQR = async (qrPayload) => {
