@@ -16,6 +16,7 @@ const AdminCompras = () => {
   const [loading, setLoading] = useState(true);
   const [eventoFiltro, setEventoFiltro] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState('');
+  const [comprobanteModal, setComprobanteModal] = useState(null);
 
   useEffect(() => {
     cargarDatos();
@@ -200,14 +201,12 @@ const AdminCompras = () => {
                       <p className="text-foreground/50 text-sm mb-1">Método de Pago</p>
                       <p className="text-foreground font-medium mb-3">{compra.metodo_pago}</p>
                       {compra.comprobante_pago && (
-                        <a
-                          href={compra.comprobante_pago}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline text-sm"
+                        <button
+                          onClick={() => setComprobanteModal(compra.comprobante_pago)}
+                          className="text-primary hover:underline text-sm font-medium flex items-center gap-1"
                         >
-                          Ver comprobante
-                        </a>
+                          🔍 Ver comprobante
+                        </button>
                       )}
                       <div className="mt-3">
                         <span
@@ -263,6 +262,38 @@ const AdminCompras = () => {
           )}
         </main>
       </div>
+
+      {/* Modal de Comprobante */}
+      {comprobanteModal && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setComprobanteModal(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-card p-6 rounded-3xl max-w-4xl max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-heading font-bold text-foreground">
+                Comprobante de Pago
+              </h3>
+              <button
+                onClick={() => setComprobanteModal(null)}
+                className="text-foreground/70 hover:text-foreground text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <img 
+              src={comprobanteModal} 
+              alt="Comprobante de pago" 
+              className="w-full rounded-xl"
+            />
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
