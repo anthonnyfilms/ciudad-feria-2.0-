@@ -42,9 +42,19 @@ const ValidarEntrada = () => {
     };
   }, [scanner]);
 
-  const iniciarEscaneo = () => {
+  const iniciarEscaneo = async () => {
     setEscaneando(true);
     setResultado(null);
+
+    // Request camera permission explicitly first
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    } catch (permError) {
+      console.error('Error requesting camera permission:', permError);
+      toast.error('No se pudo acceder a la cámara. Por favor, permite el acceso.');
+      setEscaneando(false);
+      return;
+    }
 
     // Wait for DOM to be ready
     setTimeout(() => {
@@ -53,7 +63,9 @@ const ValidarEntrada = () => {
         { 
           fps: 10, 
           qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0
+          aspectRatio: 1.0,
+          rememberLastUsedCamera: true,
+          supportedScanTypes: [0] // 0 = SCAN_TYPE_CAMERA
         },
         false
       );
@@ -65,12 +77,15 @@ const ValidarEntrada = () => {
           setEscaneando(false);
         },
         (error) => {
-          console.log(error);
+          // Silently ignore scan errors (no QR found yet)
+          if (!error.includes("No MultiFormat Readers")) {
+            console.log(error);
+          }
         }
       );
 
       setScanner(html5QrcodeScanner);
-    }, 100);
+    }, 200);
   };
 
   const validarQR = async (qrPayload) => {
