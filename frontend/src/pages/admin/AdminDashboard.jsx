@@ -219,40 +219,41 @@ const AdminDashboard = () => {
                   </div>
                 </motion.div>
               )}
+
+                {/* Quick Actions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Link to="/admin/eventos">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="glass-card p-8 rounded-2xl cursor-pointer group hover:border-primary/50 transition-all"
+                  >
+                    <Calendar className="w-10 h-10 text-primary mb-4 group-hover:scale-110 transition-transform" />
+                    <h3 className="text-xl font-heading font-bold text-foreground mb-2">
+                      Gestionar Eventos
+                    </h3>
+                    <p className="text-foreground/60">
+                      Crear, editar y eliminar eventos de la feria
+                    </p>
+                  </motion.div>
+                </Link>
+
+                <Link to="/admin/configuracion">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="glass-card p-8 rounded-2xl cursor-pointer group hover:border-primary/50 transition-all"
+                  >
+                    <Settings className="w-10 h-10 text-primary mb-4 group-hover:scale-110 transition-transform" />
+                    <h3 className="text-xl font-heading font-bold text-foreground mb-2">
+                      Configuración del Sitio
+                    </h3>
+                    <p className="text-foreground/60">
+                      Personalizar colores, banner, logo y redes sociales
+                    </p>
+                  </motion.div>
+                </Link>
+              </div>
+            </>
             )}
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Link to="/admin/eventos">
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="glass-card p-8 rounded-2xl cursor-pointer group hover:border-primary/50 transition-all"
-                >
-                  <Calendar className="w-10 h-10 text-primary mb-4 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xl font-heading font-bold text-foreground mb-2">
-                    Gestionar Eventos
-                  </h3>
-                  <p className="text-foreground/60">
-                    Crear, editar y eliminar eventos de la feria
-                  </p>
-                </motion.div>
-              </Link>
-
-              <Link to="/admin/configuracion">
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="glass-card p-8 rounded-2xl cursor-pointer group hover:border-primary/50 transition-all"
-                >
-                  <Settings className="w-10 h-10 text-primary mb-4 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xl font-heading font-bold text-foreground mb-2">
-                    Configuración del Sitio
-                  </h3>
-                  <p className="text-foreground/60">
-                    Personalizar colores, banner, logo y redes sociales
-                  </p>
-                </motion.div>
-              </Link>
-            </div>
           </motion.div>
         </main>
       </div>
