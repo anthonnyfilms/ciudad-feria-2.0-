@@ -85,6 +85,28 @@ class EventoUpdate(BaseModel):
     link_externo: Optional[str] = None
     asientos_disponibles: Optional[int] = None
 
+class Categoria(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nombre: str
+    slug: str
+    color: str = "#FACC15"
+    icono: Optional[str] = None
+    orden: int = 0
+    fecha_creacion: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CategoriaCreate(BaseModel):
+    nombre: str
+    color: str = "#FACC15"
+    icono: Optional[str] = None
+    orden: int = 0
+
+class CategoriaUpdate(BaseModel):
+    nombre: Optional[str] = None
+    color: Optional[str] = None
+    icono: Optional[str] = None
+    orden: Optional[int] = None
+
 class ConfiguracionSitio(BaseModel):
     banner_principal: Optional[str] = None
     logo: Optional[str] = None
