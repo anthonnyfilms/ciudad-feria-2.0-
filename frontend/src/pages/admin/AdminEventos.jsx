@@ -12,6 +12,7 @@ const API = `${BACKEND_URL}/api`;
 const AdminEventos = () => {
   const navigate = useNavigate();
   const [eventos, setEventos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [eventoEditando, setEventoEditando] = useState(null);
@@ -21,7 +22,7 @@ const AdminEventos = () => {
     fecha: '',
     hora: '',
     ubicacion: '',
-    categoria: 'conciertos',
+    categoria: '',
     precio: 0,
     imagen: '',
     link_externo: '',
@@ -30,7 +31,21 @@ const AdminEventos = () => {
 
   useEffect(() => {
     cargarEventos();
+    cargarCategorias();
   }, []);
+
+  const cargarCategorias = async () => {
+    try {
+      const response = await axios.get(`${API}/categorias`);
+      setCategorias(response.data);
+      if (response.data.length > 0 && !formData.categoria) {
+        setFormData(prev => ({...prev, categoria: response.data[0].slug}));
+      }
+    } catch (error) {
+      console.error('Error cargando categorías:', error);
+      toast.error('Error al cargar categorías');
+    }
+  };
 
   const cargarEventos = async () => {
     try {
@@ -341,10 +356,15 @@ const AdminEventos = () => {
                     onChange={(e) => setFormData({...formData, categoria: e.target.value})}
                     className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   >
-                    <option value="conciertos">Conciertos</option>
-                    <option value="culturales">Culturales</option>
-                    <option value="deportivos">Deportivos</option>
+                    {categorias.map((cat) => (
+                      <option key={cat.id} value={cat.slug}>{cat.nombre}</option>
+                    ))}
                   </select>
+                  {categorias.length === 0 && (
+                    <p className="text-xs text-accent mt-1">
+                      No hay categorías. <Link to="/admin/categorias" className="underline">Crear una</Link>
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-foreground/80 mb-2 font-medium">Precio ($)</label>
