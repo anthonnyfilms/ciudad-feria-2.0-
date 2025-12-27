@@ -208,6 +208,19 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Invalid token")
 
 # QR Functions
+def generar_codigo_alfanumerico(evento_id: str, entrada_id: str) -> str:
+    """Genera un código alfanumérico único tipo CF-2026-ABC123"""
+    import random
+    import string
+    
+    # Tomar las últimas 6 letras/números del entrada_id
+    codigo_unico = entrada_id.replace('-', '')[-6:].upper()
+    
+    # Generar parte aleatoria adicional
+    parte_aleatoria = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    
+    return f"CF-2026-{codigo_unico}-{parte_aleatoria}"
+
 def generar_qr_seguro(datos: dict) -> str:
     datos_json = json.dumps(datos)
     iv = os.urandom(16)
@@ -314,11 +327,15 @@ async def comprar_entrada(compra: CompraEntrada):
     for i in range(compra.cantidad):
         entrada_id = str(uuid.uuid4())
         
+        # Generar código alfanumérico
+        codigo_alfanumerico = generar_codigo_alfanumerico(compra.evento_id, entrada_id)
+        
         # Asignar asiento si está especificado
         asiento = compra.asientos[i] if compra.asientos and i < len(compra.asientos) else None
         
         datos_entrada = {
             "entrada_id": entrada_id,
+            "codigo_alfanumerico": codigo_alfanumerico,
             "evento_id": compra.evento_id,
             "nombre_evento": evento['nombre'],
             "nombre_comprador": compra.nombre_comprador,
@@ -353,8 +370,12 @@ async def comprar_entrada(compra: CompraEntrada):
         
         doc_entrada = entrada.model_dump()
         doc_entrada['fecha_compra'] = doc_entrada['fecha_compra'].isoformat()
+        doc_entrada['codigo_alfanumerico'] = codigo_alfanumerico  # Guardar el código
         await db.entradas.insert_one(doc_entrada)
-        entradas.append(entrada.model_dump())
+        
+        entrada_dict = entrada.model_dump()
+        entrada_dict['codigo_alfanumerico'] = codigo_alfanumerico  # Incluir en respuesta
+        entradas.append(entrada_dict)
     
     await db.eventos.update_one(
         {"id": compra.evento_id},
