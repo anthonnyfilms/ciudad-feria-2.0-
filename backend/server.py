@@ -57,8 +57,11 @@ class Evento(BaseModel):
     categoria: str
     precio: float
     imagen: str
+    template_entrada: Optional[str] = None
+    posicion_qr: Optional[dict] = {"x": 50, "y": 50}
     link_externo: Optional[str] = None
     asientos_disponibles: int
+    categorias_asientos: List[dict] = []
     fecha_creacion: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class EventoCreate(BaseModel):
@@ -70,8 +73,11 @@ class EventoCreate(BaseModel):
     categoria: str
     precio: float
     imagen: str
+    template_entrada: Optional[str] = None
+    posicion_qr: Optional[dict] = {"x": 50, "y": 50}
     link_externo: Optional[str] = None
     asientos_disponibles: int = 1000
+    categorias_asientos: List[dict] = []
 
 class EventoUpdate(BaseModel):
     nombre: Optional[str] = None
@@ -82,8 +88,11 @@ class EventoUpdate(BaseModel):
     categoria: Optional[str] = None
     precio: Optional[float] = None
     imagen: Optional[str] = None
+    template_entrada: Optional[str] = None
+    posicion_qr: Optional[dict] = None
     link_externo: Optional[str] = None
     asientos_disponibles: Optional[int] = None
+    categorias_asientos: Optional[List[dict]] = None
 
 class Categoria(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -134,6 +143,7 @@ class CompraEntrada(BaseModel):
     metodo_pago: str
     comprobante_pago: Optional[str] = None
     asientos: Optional[List[str]] = []
+    categoria_asiento: Optional[str] = None
 
 class AprobarCompra(BaseModel):
     entrada_ids: List[str]
