@@ -212,10 +212,13 @@ def main():
                 tester.test_mis_entradas("test@example.com")
                 
                 # Test 6: Validate QR (if we have qr_payload)
-                # Note: This might fail if the QR payload format is different
-                # We'll try to extract it from the database response
-                print("\n🔍 Testing QR Validation...")
-                print("   Note: QR validation test may require actual QR payload from database")
+                qr_payload = entrada_data.get('qr_payload')
+                if qr_payload:
+                    print("\n🔍 Testing QR Validation with real payload...")
+                    tester.test_validar_entrada(qr_payload)
+                else:
+                    print("\n🔍 Testing QR Validation...")
+                    print("   Note: QR validation test may require actual QR payload from database")
     
     # Test 7: Admin Login
     print("\n🔐 Testing Admin Functionality...")
