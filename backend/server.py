@@ -371,6 +371,7 @@ async def comprar_entrada(compra: CompraEntrada):
 async def validar_entrada(request: Request):
     body = await request.json()
     qr_payload = body.get('qr_payload')
+    accion = body.get('accion', 'verificar')  # verificar, entrada, salida
     
     if not qr_payload:
         raise HTTPException(status_code=400, detail="Payload QR no proporcionado")
@@ -385,44 +386,123 @@ async def validar_entrada(request: Request):
     if not entrada:
         raise HTTPException(status_code=404, detail="Entrada no encontrada")
     
-    if entrada['usado']:
+    # Verificar estado de pago
+    if entrada.get('estado_pago') != 'aprobado':
         return {
             "valido": False,
-            "mensaje": "Esta entrada ya fue utilizada",
-            "fecha_uso": entrada.get('fecha_uso')
+            "mensaje": "Esta entrada no ha sido aprobada aún. Espere la confirmación del pago.",
+            "requiere_aprobacion": True
         }
     
+    # Verificar hash
     hash_verificacion = generar_hash({
         "entrada_id": datos_entrada['entrada_id'],
         "evento_id": datos_entrada['evento_id'],
         "nombre_evento": datos_entrada['nombre_evento'],
         "nombre_comprador": datos_entrada['nombre_comprador'],
         "email_comprador": datos_entrada['email_comprador'],
-        "numero_entrada": datos_entrada['numero_entrada']
+        "telefono_comprador": datos_entrada.get('telefono_comprador'),
+        "numero_entrada": datos_entrada['numero_entrada'],
+        "asiento": datos_entrada.get('asiento')
     })
     
     if hash_verificacion != entrada['hash_validacion']:
-        raise HTTPException(status_code=400, detail="Entrada ha sido modificada o es fraudulenta")
+        return {
+            "valido": False,
+            "mensaje": "⚠️ ALERTA: Entrada fraudulenta detectada",
+            "tipo_alerta": "fraude"
+        }
     
-    await db.entradas.update_one(
-        {"id": entrada_id},
-        {
-            "$set": {
-                "usado": True,
-                "fecha_uso": datetime.now(timezone.utc).isoformat()
+    if accion == 'verificar':
+        return {
+            "valido": True,
+            "mensaje": "Entrada válida",
+            "entrada": {
+                "nombre_evento": entrada['nombre_evento'],
+                "nombre_comprador": entrada['nombre_comprador'],
+                "email_comprador": entrada['email_comprador'],
+                "asiento": entrada.get('asiento'),
+                "mesa": entrada.get('mesa'),
+                "estado_actual": entrada.get('estado_entrada', 'fuera')
             }
         }
-    )
     
-    return {
-        "valido": True,
-        "mensaje": "Entrada válida y registrada",
-        "entrada": {
-            "nombre_evento": entrada['nombre_evento'],
-            "nombre_comprador": entrada['nombre_comprador'],
-            "email_comprador": entrada['email_comprador']
+    elif accion == 'entrada':
+        if entrada.get('estado_entrada') == 'dentro':
+            return {
+                "valido": False,
+                "mensaje": "🚨 ALERTA: Esta persona ya está dentro del evento",
+                "tipo_alerta": "ya_dentro",
+                "entrada": {
+                    "nombre_comprador": entrada['nombre_comprador'],
+                    "asiento": entrada.get('asiento')
+                }
+            }
+        
+        # Registrar entrada
+        historial = entrada.get('historial_acceso', [])
+        historial.append({
+            "tipo": "entrada",
+            "fecha": datetime.now(timezone.utc).isoformat()
+        })
+        
+        await db.entradas.update_one(
+            {"id": entrada_id},
+            {
+                "$set": {
+                    "estado_entrada": "dentro",
+                    "usado": True,
+                    "fecha_uso": datetime.now(timezone.utc).isoformat(),
+                    "historial_acceso": historial
+                }
+            }
+        )
+        
+        return {
+            "valido": True,
+            "mensaje": "✅ Entrada registrada exitosamente",
+            "tipo_accion": "entrada",
+            "entrada": {
+                "nombre_comprador": entrada['nombre_comprador'],
+                "asiento": entrada.get('asiento'),
+                "mesa": entrada.get('mesa')
+            }
         }
-    }
+    
+    elif accion == 'salida':
+        if entrada.get('estado_entrada') != 'dentro':
+            return {
+                "valido": False,
+                "mensaje": "Esta persona no está registrada como dentro del evento",
+                "tipo_alerta": "no_dentro"
+            }
+        
+        # Registrar salida
+        historial = entrada.get('historial_acceso', [])
+        historial.append({
+            "tipo": "salida",
+            "fecha": datetime.now(timezone.utc).isoformat()
+        })
+        
+        await db.entradas.update_one(
+            {"id": entrada_id},
+            {
+                "$set": {
+                    "estado_entrada": "fuera",
+                    "historial_acceso": historial
+                }
+            }
+        )
+        
+        return {
+            "valido": True,
+            "mensaje": "✅ Salida registrada exitosamente",
+            "tipo_accion": "salida",
+            "entrada": {
+                "nombre_comprador": entrada['nombre_comprador'],
+                "asiento": entrada.get('asiento')
+            }
+        }
 
 @api_router.get("/mis-entradas/{email}")
 async def obtener_mis_entradas(email: str):
