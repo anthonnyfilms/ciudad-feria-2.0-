@@ -127,6 +127,58 @@ class CiudadFeriaAPITester:
         }
         return self.run_test("Validate QR Code", "POST", "validar-entrada", 200, validation_data)
 
+    def test_admin_login(self):
+        """Test admin login"""
+        login_data = {
+            "username": "admin",
+            "password": "admin123"
+        }
+        success, data = self.run_test("Admin Login", "POST", "admin/login", 200, login_data)
+        
+        if success and data.get('access_token'):
+            print(f"   ✅ Access token received")
+            return True, data.get('access_token')
+        else:
+            self.log_test("Admin Token Check", False, "No access token in response")
+            return False, None
+
+    def test_admin_estadisticas(self, token):
+        """Test admin statistics endpoint"""
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {token}'
+        }
+        
+        success, data = self.run_test("Admin Statistics", "GET", "admin/estadisticas", 200, headers=headers)
+        
+        if success:
+            # Check required fields
+            required_fields = [
+                'total_eventos', 
+                'total_entradas_vendidas', 
+                'entradas_aprobadas', 
+                'entradas_pendientes_pago', 
+                'ventas_por_evento'
+            ]
+            
+            missing_fields = []
+            for field in required_fields:
+                if field not in data:
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                self.log_test("Statistics Fields Check", False, f"Missing fields: {missing_fields}")
+                return False, data
+            else:
+                print(f"   ✅ All required statistics fields present")
+                print(f"   📊 Total Events: {data.get('total_eventos', 0)}")
+                print(f"   📊 Total Tickets Sold: {data.get('total_entradas_vendidas', 0)}")
+                print(f"   📊 Approved Tickets: {data.get('entradas_aprobadas', 0)}")
+                print(f"   📊 Pending Payment: {data.get('entradas_pendientes_pago', 0)}")
+                return True, data
+        
+        return success, data
+
 def main():
     print("🎪 Ciudad Feria API Testing Suite")
     print("=" * 50)
