@@ -300,9 +300,10 @@ const ValidarEntrada = () => {
             </motion.button>
           </motion.div>
         )}
-        </main>
       </div>
+    </main>
     </div>
+  </div>
   );
 };
 
