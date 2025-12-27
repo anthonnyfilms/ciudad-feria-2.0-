@@ -172,6 +172,14 @@ const MisEntradas = () => {
                             🪑 Asiento: {entrada.asiento}
                           </div>
                         )}
+                        {entrada.codigo_alfanumerico && entrada.estado_pago === 'aprobado' && (
+                          <div className="glass-card p-3 rounded-xl">
+                            <p className="text-xs text-foreground/50 mb-1">Código:</p>
+                            <p className="text-lg font-mono font-bold text-primary">
+                              {entrada.codigo_alfanumerico}
+                            </p>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2">
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                             entrada.estado_pago === 'aprobado'
