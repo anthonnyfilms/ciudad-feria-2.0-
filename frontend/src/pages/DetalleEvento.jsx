@@ -326,7 +326,7 @@ const DetalleEvento = () => {
                       whileTap={{ scale: 0.98 }}
                       className="w-full bg-primary text-primary-foreground py-4 rounded-full font-bold text-lg"
                     >
-                      Continuar ({seleccionAsientos.asientos.length} asiento{seleccionAsientos.asientos.length > 1 ? 's' : ''})
+                      Continuar ({seleccionAsientos.asientos.length} silla{seleccionAsientos.asientos.length > 1 ? 's' : ''} - ${seleccionAsientos.precioTotal?.toFixed(2) || '0.00'})
                     </motion.button>
                   )}
                 </div>
@@ -339,30 +339,54 @@ const DetalleEvento = () => {
                   {(evento.tipo_asientos === 'general' || !evento.tipo_asientos) && (
                     <SelectorAsientos
                       eventoId={id}
+                      precioBase={evento.precio}
                       onSeleccionChange={handleSeleccionAsientos}
                       maxSeleccion={10}
                     />
                   )}
 
-                  {/* Resumen de asientos seleccionados (para mesas) */}
-                  {evento.tipo_asientos && evento.tipo_asientos !== 'general' && (
-                    <div className="glass-card p-4 rounded-xl bg-primary/5 mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-foreground/70">Asientos seleccionados:</span>
+                  {/* Factura detallada (para mesas) */}
+                  {evento.tipo_asientos && evento.tipo_asientos !== 'general' && seleccionAsientos.detalles && (
+                    <div className="glass-card p-6 rounded-xl bg-primary/5 mb-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-foreground">📋 Tu Factura</h4>
                         <button
                           type="button"
                           onClick={() => setPasoCompra(1)}
                           className="text-primary text-sm hover:underline"
                         >
-                          Cambiar
+                          Modificar
                         </button>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {seleccionAsientos.asientos.map(asiento => (
-                          <span key={asiento} className="px-3 py-1 bg-primary/20 text-primary text-sm rounded-full">
-                            {asiento}
-                          </span>
-                        ))}
+                      
+                      {/* Detalle por asiento */}
+                      <div className="space-y-2 mb-4">
+                        {seleccionAsientos.asientos.map((asiento, idx) => {
+                          const detalle = seleccionAsientos.detalles?.find(d => d.asientos?.includes(asiento));
+                          const precio = detalle?.precioUnitario || evento.precio;
+                          return (
+                            <div key={asiento} className="flex justify-between items-center py-2 border-b border-white/10">
+                              <span className="text-foreground">{asiento.replace('-', ' • ')}</span>
+                              <span className="font-bold text-foreground">${precio.toFixed(2)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Subtotal por categoría */}
+                      {seleccionAsientos.detalles?.map((detalle, idx) => (
+                        <div key={idx} className="flex justify-between text-sm text-foreground/70 mb-1">
+                          <span>{detalle.tipo} x{detalle.cantidad}</span>
+                          <span>${(detalle.precioUnitario * detalle.cantidad).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      
+                      {/* Total */}
+                      <div className="flex justify-between items-center pt-4 mt-4 border-t border-white/20">
+                        <span className="text-xl font-bold text-foreground">TOTAL:</span>
+                        <span className="text-3xl font-black text-primary">
+                          ${seleccionAsientos.precioTotal?.toFixed(2) || '0.00'}
+                        </span>
                       </div>
                     </div>
                   )}
