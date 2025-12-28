@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { LayoutDashboard, Calendar, Settings, LogOut, Plus, Edit, Trash2, ExternalLink, Tag, ShoppingCart, CreditCard, Shield, Table2, Users } from 'lucide-react';
+import { LayoutDashboard, Calendar, Settings, LogOut, Plus, Edit, Trash2, ExternalLink, Tag, ShoppingCart, CreditCard, Shield, Table2, Users, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../../components/ui/sonner';
 import ConfiguradorAsientos from '../../components/ConfiguradorAsientos';
@@ -17,7 +17,8 @@ const AdminEventos = () => {
   const [loading, setLoading] = useState(true);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [eventoEditando, setEventoEditando] = useState(null);
-  const [pasoActual, setPasoActual] = useState(1); // 1: Info básica, 2: Asientos
+  const [pasoActual, setPasoActual] = useState(1);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -37,6 +38,36 @@ const AdminEventos = () => {
     cargarEventos();
     cargarCategorias();
   }, []);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor selecciona una imagen');
+      return;
+    }
+
+    setUploadingImage(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+
+    try {
+      const response = await axios.post(`${API}/upload-imagen`, formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      // Construir URL completa
+      const imageUrl = `${BACKEND_URL}${response.data.url}`;
+      setFormData(prev => ({ ...prev, imagen: imageUrl }));
+      toast.success('Imagen subida correctamente');
+    } catch (error) {
+      console.error('Error subiendo imagen:', error);
+      toast.error('Error al subir la imagen');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const cargarCategorias = async () => {
     try {
