@@ -245,7 +245,7 @@ const SelectorAsientos = ({ eventoId, precioBase = 0, onSeleccionChange, maxSele
         </div>
       </div>
 
-      {/* Mapa por Categorías */}
+      {/* Mapa por Categorías - EN LÍNEA HORIZONTAL */}
       {Object.entries(mesasPorCategoria).map(([categoria, mesasCategoria]) => {
         const categoriaColor = getCategoriaColor(categoria);
         const precioCategoria = mesasCategoria[0]?.precio || precioBase;
@@ -272,72 +272,105 @@ const SelectorAsientos = ({ eventoId, precioBase = 0, onSeleccionChange, maxSele
               </div>
             </div>
 
-            {/* Mesas de esta categoría */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {mesasCategoria.map((mesa, mesaIndex) => {
-                const mesaId = mesa.id || (mesaIndex + 1).toString();
-                const numSillas = mesa.sillas || 10;
-                const mesaNombre = mesa.nombre || `Mesa ${mesaIndex + 1}`;
-                
-                return (
-                  <div key={mesaId} className="relative">
-                    {/* Nombre de la mesa */}
-                    <div className="text-center mb-3">
-                      <span className="font-bold text-foreground">
-                        {mesaNombre}
-                      </span>
-                    </div>
-
-                    {/* Mesa con sillas */}
-                    <div className="relative flex items-center justify-center" style={{ height: '140px' }}>
-                      {/* Mesa central */}
-                      <div 
-                        className="w-14 h-14 rounded-full flex items-center justify-center z-10 border-2"
-                        style={{ 
-                          backgroundColor: categoriaColor + '20',
-                          borderColor: categoriaColor + '40'
-                        }}
-                      >
-                        <Table2 className="w-5 h-5" style={{ color: categoriaColor }} />
+            {/* Mesas en LÍNEA HORIZONTAL con scroll */}
+            <div className="overflow-x-auto pb-4">
+              <div className="flex gap-8 min-w-max px-4">
+                {mesasCategoria.map((mesa, mesaIndex) => {
+                  const mesaId = mesa.id || (mesaIndex + 1).toString();
+                  const numSillas = mesa.sillas || 10;
+                  const mesaNombre = mesa.nombre || `Mesa ${mesaIndex + 1}`;
+                  
+                  return (
+                    <div key={mesaId} className="flex flex-col items-center">
+                      {/* Nombre de la mesa */}
+                      <div className="text-center mb-3">
+                        <span className="font-bold text-foreground text-sm">
+                          {mesaNombre}
+                        </span>
                       </div>
 
-                      {/* Sillas alrededor */}
-                      {Array.from({ length: numSillas }).map((_, sillaIndex) => {
-                        const sillaNum = sillaIndex + 1;
-                        const asientoId = `${mesaNombre}-Silla${sillaNum}`;
-                        const estado = getEstadoAsiento(asientoId);
-                        const angulo = (360 / numSillas) * sillaIndex - 90;
-                        const radio = 50;
-                        const x = Math.cos((angulo * Math.PI) / 180) * radio;
-                        const y = Math.sin((angulo * Math.PI) / 180) * radio;
+                      {/* Mesa con sillas en línea */}
+                      <div className="flex items-center gap-1">
+                        {/* Sillas lado izquierdo */}
+                        <div className="flex flex-col gap-1">
+                          {Array.from({ length: Math.ceil(numSillas / 2) }).map((_, idx) => {
+                            const sillaNum = idx + 1;
+                            const asientoId = `${mesaNombre}-Silla${sillaNum}`;
+                            const estado = getEstadoAsiento(asientoId);
 
-                        return (
-                          <button
-                            key={sillaIndex}
-                            type="button"
-                            disabled={estado === 'ocupado' || estado === 'pendiente'}
-                            onClick={() => toggleAsiento(asientoId, mesa.precio || precioBase)}
-                            className={`absolute w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-xs font-bold text-white shadow-md ${getColorAsiento(estado, categoriaColor)}`}
-                            style={{
-                              transform: `translate(${x}px, ${y}px)`,
-                              backgroundColor: estado === 'disponible' ? categoriaColor : undefined
-                            }}
-                            title={`Silla ${sillaNum} - $${mesa.precio || precioBase}`}
-                          >
-                            {estado === 'seleccionado' ? (
-                              <Check className="w-4 h-4" />
-                            ) : estado === 'ocupado' ? (
-                              <X className="w-4 h-4" />
-                            ) : (
-                              sillaNum
-                            )}
-                          </button>
-                        );
-                      })}
+                            return (
+                              <button
+                                key={sillaNum}
+                                type="button"
+                                disabled={estado === 'ocupado' || estado === 'pendiente'}
+                                onClick={() => toggleAsiento(asientoId, mesa.precio || precioBase)}
+                                className={`w-8 h-8 rounded transition-all duration-200 flex items-center justify-center text-xs font-bold text-white ${getColorAsiento(estado, categoriaColor)}`}
+                                style={{
+                                  backgroundColor: estado === 'disponible' ? categoriaColor : undefined
+                                }}
+                                title={`Silla ${sillaNum} - $${mesa.precio || precioBase}`}
+                              >
+                                {estado === 'seleccionado' ? (
+                                  <Check className="w-4 h-4" />
+                                ) : estado === 'ocupado' ? (
+                                  <X className="w-4 h-4" />
+                                ) : (
+                                  sillaNum
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Mesa central */}
+                        <div 
+                          className="w-10 h-16 rounded flex items-center justify-center border-2"
+                          style={{ 
+                            backgroundColor: categoriaColor + '20',
+                            borderColor: categoriaColor + '40'
+                          }}
+                        >
+                          <Table2 className="w-4 h-4" style={{ color: categoriaColor }} />
+                        </div>
+
+                        {/* Sillas lado derecho */}
+                        <div className="flex flex-col gap-1">
+                          {Array.from({ length: Math.floor(numSillas / 2) }).map((_, idx) => {
+                            const sillaNum = Math.ceil(numSillas / 2) + idx + 1;
+                            const asientoId = `${mesaNombre}-Silla${sillaNum}`;
+                            const estado = getEstadoAsiento(asientoId);
+
+                            return (
+                              <button
+                                key={sillaNum}
+                                type="button"
+                                disabled={estado === 'ocupado' || estado === 'pendiente'}
+                                onClick={() => toggleAsiento(asientoId, mesa.precio || precioBase)}
+                                className={`w-8 h-8 rounded transition-all duration-200 flex items-center justify-center text-xs font-bold text-white ${getColorAsiento(estado, categoriaColor)}`}
+                                style={{
+                                  backgroundColor: estado === 'disponible' ? categoriaColor : undefined
+                                }}
+                                title={`Silla ${sillaNum} - $${mesa.precio || precioBase}`}
+                              >
+                                {estado === 'seleccionado' ? (
+                                  <Check className="w-4 h-4" />
+                                ) : estado === 'ocupado' ? (
+                                  <X className="w-4 h-4" />
+                                ) : (
+                                  sillaNum
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Precio debajo de la mesa */}
+                      <p className="text-xs text-foreground/50 mt-2">${mesa.precio || precioBase}/silla</p>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         );
