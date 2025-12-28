@@ -1072,7 +1072,8 @@ async def crear_categoria_mesa(request: Request, current_user: str = Depends(get
     }
     
     await db.categorias_mesas.insert_one(categoria)
-    del categoria['_id'] if '_id' in categoria else None
+    if '_id' in categoria:
+        del categoria['_id']
     
     return categoria
 
