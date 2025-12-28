@@ -281,6 +281,7 @@ class CiudadFeriaAPITester:
             "email_comprador": "maria@example.com",
             "telefono_comprador": "1234567890",
             "cantidad": 2,
+            "precio_total": 100.0,  # Added required field
             "metodo_pago": "efectivo",
             "asientos": ["M1-S3", "M1-S4"]
         }
