@@ -100,18 +100,28 @@ const DetalleEvento = () => {
       return;
     }
 
+    // Validar selección de asientos
+    const tipoAsientos = evento?.tipo_asientos || 'general';
+    if (tipoAsientos !== 'general' && seleccionAsientos.asientos.length === 0) {
+      toast.error('Por favor selecciona tus asientos');
+      return;
+    }
+
     setComprando(true);
 
     try {
+      const cantidadFinal = tipoAsientos === 'general' ? seleccionAsientos.cantidad : seleccionAsientos.asientos.length;
+      
       const response = await axios.post(`${API}/comprar-entrada`, {
         evento_id: id,
         nombre_comprador: nombre,
         email_comprador: email,
         telefono_comprador: telefono,
-        cantidad: cantidad,
-        precio_total: evento.precio * cantidad,
+        cantidad: cantidadFinal,
+        precio_total: evento.precio * cantidadFinal,
         metodo_pago: metodoPago,
-        comprobante_pago: comprobante || null
+        comprobante_pago: comprobante || null,
+        asientos: seleccionAsientos.asientos
       });
 
       if (response.data.requiere_aprobacion) {
@@ -130,6 +140,11 @@ const DetalleEvento = () => {
     } finally {
       setComprando(false);
     }
+  };
+
+  const handleSeleccionAsientos = (seleccion) => {
+    setSeleccionAsientos(seleccion);
+    setCantidad(seleccion.total || seleccion.cantidad || 1);
   };
 
   const descargarEntrada = (entrada, index) => {
