@@ -74,8 +74,10 @@ const AdminConfiguracion = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Calendar, label: 'Eventos', path: '/admin/eventos' },
     { icon: Tag, label: 'Categorías', path: '/admin/categorias' },
+    { icon: Table2, label: 'Categorías Mesas', path: '/admin/categorias-mesas' },
     { icon: ShoppingCart, label: 'Compras', path: '/admin/compras' },
     { icon: CreditCard, label: 'Métodos de Pago', path: '/admin/metodos-pago' },
+    { icon: Shield, label: 'Validar Entradas', path: '/admin/validar' },
     { icon: Settings, label: 'Configuración', path: '/admin/configuracion', active: true },
   ];
 
