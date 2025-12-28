@@ -83,7 +83,17 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
       nombre: `Mesa ${mesas.length + 1}`,
       sillas: 10,
       precio: 0,
-      categoria: 'General'
+      categoria: categoriasMesas.length > 0 ? categoriasMesas[0].nombre : 'General'
+    };
+    setMesas([...mesas, nuevaMesa]);
+  };
+
+  const duplicarMesa = (index) => {
+    const mesaOriginal = mesas[index];
+    const nuevaMesa = {
+      ...mesaOriginal,
+      id: Date.now().toString(),
+      nombre: `${mesaOriginal.nombre} (copia)`
     };
     setMesas([...mesas, nuevaMesa]);
   };
@@ -107,6 +117,11 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
       return mesas.reduce((acc, mesa) => acc + mesa.sillas, 0) + entradasGeneralesMixto;
     }
     return 0;
+  };
+
+  const getCategoriaColor = (categoriaNombre) => {
+    const cat = categoriasMesas.find(c => c.nombre === categoriaNombre);
+    return cat?.color || '#10B981';
   };
 
   return (
