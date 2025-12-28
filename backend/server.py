@@ -1005,6 +1005,109 @@ async def reservar_asientos(request: Request):
         "expira_en": 600  # 10 minutos
     }
 
+# ==================== UPLOAD DE IMÁGENES ====================
+
+@api_router.post("/upload-imagen")
+async def upload_imagen(file: UploadFile = File(...)):
+    """Subir una imagen y retornar la URL"""
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen")
+    
+    # Generar nombre único
+    extension = file.filename.split('.')[-1] if '.' in file.filename else 'jpg'
+    filename = f"{uuid.uuid4()}.{extension}"
+    file_path = UPLOADS_DIR / filename
+    
+    # Guardar archivo
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Retornar URL relativa
+    return {
+        "success": True,
+        "url": f"/api/uploads/{filename}",
+        "filename": filename
+    }
+
+@api_router.get("/uploads/{filename}")
+async def get_upload(filename: str):
+    """Servir archivos subidos"""
+    from fastapi.responses import FileResponse
+    file_path = UPLOADS_DIR / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return FileResponse(file_path)
+
+# ==================== CATEGORÍAS DE MESAS ====================
+
+@api_router.get("/categorias-mesas")
+async def obtener_categorias_mesas():
+    """Obtener todas las categorías de mesas"""
+    categorias = await db.categorias_mesas.find({}, {"_id": 0}).to_list(100)
+    if not categorias:
+        # Categorías por defecto
+        categorias_default = [
+            {"id": str(uuid.uuid4()), "nombre": "General", "color": "#10B981"},
+            {"id": str(uuid.uuid4()), "nombre": "VIP", "color": "#F59E0B"},
+            {"id": str(uuid.uuid4()), "nombre": "Premium", "color": "#8B5CF6"}
+        ]
+        await db.categorias_mesas.insert_many(categorias_default)
+        return categorias_default
+    return categorias
+
+@api_router.post("/admin/categorias-mesas")
+async def crear_categoria_mesa(request: Request, current_user: str = Depends(get_current_user)):
+    """Crear una nueva categoría de mesa"""
+    body = await request.json()
+    nombre = body.get('nombre')
+    color = body.get('color', '#10B981')
+    
+    if not nombre:
+        raise HTTPException(status_code=400, detail="El nombre es requerido")
+    
+    categoria = {
+        "id": str(uuid.uuid4()),
+        "nombre": nombre,
+        "color": color
+    }
+    
+    await db.categorias_mesas.insert_one(categoria)
+    del categoria['_id'] if '_id' in categoria else None
+    
+    return categoria
+
+@api_router.put("/admin/categorias-mesas/{categoria_id}")
+async def actualizar_categoria_mesa(categoria_id: str, request: Request, current_user: str = Depends(get_current_user)):
+    """Actualizar una categoría de mesa"""
+    body = await request.json()
+    
+    update_data = {}
+    if 'nombre' in body:
+        update_data['nombre'] = body['nombre']
+    if 'color' in body:
+        update_data['color'] = body['color']
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+    
+    result = await db.categorias_mesas.update_one(
+        {"id": categoria_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    
+    return {"success": True, "message": "Categoría actualizada"}
+
+@api_router.delete("/admin/categorias-mesas/{categoria_id}")
+async def eliminar_categoria_mesa(categoria_id: str, current_user: str = Depends(get_current_user)):
+    """Eliminar una categoría de mesa"""
+    result = await db.categorias_mesas.delete_one({"id": categoria_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    return {"success": True, "message": "Categoría eliminada"}
+
 app.include_router(api_router)
 
 app.add_middleware(
