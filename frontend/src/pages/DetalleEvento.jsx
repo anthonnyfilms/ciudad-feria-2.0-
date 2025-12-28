@@ -305,138 +305,189 @@ const DetalleEvento = () => {
               <h3 className="text-2xl font-heading font-bold text-foreground mb-6">
                 Comprar Entradas
               </h3>
-              <form onSubmit={handleCompra} className="space-y-6">
-                <div>
-                  <label className="block text-foreground/80 mb-2 font-medium">
-                    Nombre Completo
-                  </label>
-                  <input
-                    type="text"
-                    value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
-                    className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    placeholder="Tu nombre"
-                    required
-                    data-testid="input-nombre"
-                  />
-                </div>
 
-                <div>
-                  <label className="block text-foreground/80 mb-2 font-medium">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    placeholder="tu@email.com"
-                    required
-                    data-testid="input-email"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-foreground/80 mb-2 font-medium">
-                    Teléfono (Opcional)
-                  </label>
-                  <input
-                    type="tel"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    placeholder="+58 412 123 4567"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-foreground/80 mb-2 font-medium">
-                    Método de Pago *
-                  </label>
-                  <select
-                    value={metodoPago}
-                    onChange={(e) => setMetodoPago(e.target.value)}
-                    className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    required
-                  >
-                    {metodosPago.map((metodo) => (
-                      <option key={metodo.id} value={metodo.id}>{metodo.nombre}</option>
-                    ))}
-                  </select>
-                  {metodoPago && metodosPago.find(m => m.id === metodoPago) && (
-                    <div className="mt-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                      <p className="text-sm text-foreground/80 whitespace-pre-line">
-                        {metodosPago.find(m => m.id === metodoPago).informacion}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-foreground/80 mb-2 font-medium">
-                    Comprobante de Pago *
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleComprobanteFile}
-                    className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
-                    disabled={uploadingComprobante}
-                  />
-                  <p className="text-xs text-foreground/50 mt-2">
-                    Sube una foto o captura de tu comprobante de pago (máx. 5MB)
+              {/* Paso 1: Selector de Asientos (si aplica) */}
+              {evento.tipo_asientos && evento.tipo_asientos !== 'general' && pasoCompra === 1 && (
+                <div className="space-y-6">
+                  <p className="text-foreground/70 text-center mb-4">
+                    Selecciona tus asientos en el mapa
                   </p>
-                  {comprobante && (
-                    <div className="mt-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                      <img 
-                        src={comprobante} 
-                        alt="Comprobante" 
-                        className="max-h-40 rounded-lg mx-auto"
-                      />
-                      <p className="text-xs text-primary text-center mt-2">✓ Comprobante cargado</p>
-                    </div>
+                  <SelectorAsientos
+                    eventoId={id}
+                    onSeleccionChange={handleSeleccionAsientos}
+                    maxSeleccion={10}
+                  />
+                  
+                  {seleccionAsientos.asientos.length > 0 && (
+                    <motion.button
+                      type="button"
+                      onClick={() => setPasoCompra(2)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full bg-primary text-primary-foreground py-4 rounded-full font-bold text-lg"
+                    >
+                      Continuar ({seleccionAsientos.asientos.length} asiento{seleccionAsientos.asientos.length > 1 ? 's' : ''})
+                    </motion.button>
                   )}
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-foreground/80 mb-2 font-medium">
-                    Cantidad de Entradas
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={Math.min(10, evento.asientos_disponibles)}
-                    value={cantidad}
-                    onChange={(e) => setCantidad(parseInt(e.target.value))}
-                    className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                    data-testid="input-cantidad"
-                  />
-                </div>
+              {/* Formulario de datos (Paso 2 para mesas, o directo para general) */}
+              {(evento.tipo_asientos === 'general' || !evento.tipo_asientos || pasoCompra === 2) && (
+                <form onSubmit={handleCompra} className="space-y-6">
+                  {/* Selector de cantidad para entradas generales */}
+                  {(evento.tipo_asientos === 'general' || !evento.tipo_asientos) && (
+                    <SelectorAsientos
+                      eventoId={id}
+                      onSeleccionChange={handleSeleccionAsientos}
+                      maxSeleccion={10}
+                    />
+                  )}
 
-                <div className="glass-card p-6 rounded-2xl">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-foreground/70">Precio por entrada:</span>
-                    <span className="text-foreground font-bold">${evento.precio}</span>
+                  {/* Resumen de asientos seleccionados (para mesas) */}
+                  {evento.tipo_asientos && evento.tipo_asientos !== 'general' && (
+                    <div className="glass-card p-4 rounded-xl bg-primary/5 mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-foreground/70">Asientos seleccionados:</span>
+                        <button
+                          type="button"
+                          onClick={() => setPasoCompra(1)}
+                          className="text-primary text-sm hover:underline"
+                        >
+                          Cambiar
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {seleccionAsientos.asientos.map(asiento => (
+                          <span key={asiento} className="px-3 py-1 bg-primary/20 text-primary text-sm rounded-full">
+                            {asiento}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-foreground/80 mb-2 font-medium">
+                      Nombre Completo
+                    </label>
+                    <input
+                      type="text"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      placeholder="Tu nombre"
+                      required
+                      data-testid="input-nombre"
+                    />
                   </div>
-                  <div className="flex justify-between items-center text-xl">
-                    <span className="text-foreground font-bold">Total:</span>
-                    <span className="text-primary font-black text-2xl">
-                      ${(evento.precio * cantidad).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
 
-                <motion.button
-                  type="submit"
-                  disabled={comprando}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-primary text-primary-foreground py-5 rounded-full font-bold text-lg hover:shadow-[0_0_20px_rgba(250,204,21,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  data-testid="button-comprar"
-                >
-                  {comprando ? 'Procesando...' : 'Comprar Ahora'}
-                </motion.button>
-              </form>
+                  <div>
+                    <label className="block text-foreground/80 mb-2 font-medium">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      placeholder="tu@email.com"
+                      required
+                      data-testid="input-email"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-foreground/80 mb-2 font-medium">
+                      Teléfono (Opcional)
+                    </label>
+                    <input
+                      type="tel"
+                      value={telefono}
+                      onChange={(e) => setTelefono(e.target.value)}
+                      className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      placeholder="+58 412 123 4567"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-foreground/80 mb-2 font-medium">
+                      Método de Pago *
+                    </label>
+                    <select
+                      value={metodoPago}
+                      onChange={(e) => setMetodoPago(e.target.value)}
+                      className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                      required
+                    >
+                      {metodosPago.map((metodo) => (
+                        <option key={metodo.id} value={metodo.id}>{metodo.nombre}</option>
+                      ))}
+                    </select>
+                    {metodoPago && metodosPago.find(m => m.id === metodoPago) && (
+                      <div className="mt-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                        <p className="text-sm text-foreground/80 whitespace-pre-line">
+                          {metodosPago.find(m => m.id === metodoPago).informacion}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-foreground/80 mb-2 font-medium">
+                      Comprobante de Pago *
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleComprobanteFile}
+                      className="w-full bg-input border border-border rounded-xl px-6 py-4 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                      disabled={uploadingComprobante}
+                    />
+                    <p className="text-xs text-foreground/50 mt-2">
+                      Sube una foto o captura de tu comprobante de pago (máx. 5MB)
+                    </p>
+                    {comprobante && (
+                      <div className="mt-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                        <img 
+                          src={comprobante} 
+                          alt="Comprobante" 
+                          className="max-h-40 rounded-lg mx-auto"
+                        />
+                        <p className="text-xs text-primary text-center mt-2">✓ Comprobante cargado</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="glass-card p-6 rounded-2xl">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-foreground/70">Precio por entrada:</span>
+                      <span className="text-foreground font-bold">${evento.precio}</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-foreground/70">Cantidad:</span>
+                      <span className="text-foreground font-bold">{seleccionAsientos.total || cantidad}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xl border-t border-foreground/10 pt-2 mt-2">
+                      <span className="text-foreground font-bold">Total:</span>
+                      <span className="text-primary font-black text-2xl">
+                        ${(evento.precio * (seleccionAsientos.total || cantidad)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={comprando}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full bg-primary text-primary-foreground py-5 rounded-full font-bold text-lg hover:shadow-[0_0_20px_rgba(250,204,21,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="button-comprar"
+                  >
+                    {comprando ? 'Procesando...' : 'Comprar Ahora'}
+                  </motion.button>
+                </form>
+              )}
             </div>
           </motion.div>
         </div>
