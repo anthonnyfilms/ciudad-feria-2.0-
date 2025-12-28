@@ -142,15 +142,45 @@ class SeatSystemTester:
         """Test POST /api/comprar-entrada with seat selection"""
         print("\n4️⃣ Testing POST /api/comprar-entrada with seat selection")
         
+        # First check which seats are available
+        response = requests.get(f"{self.api_url}/eventos/{self.test_evento_id}/asientos")
+        if response.status_code == 200:
+            data = response.json()
+            occupied = data.get('asientos_ocupados', [])
+            pending = data.get('asientos_pendientes', [])
+            unavailable = set(occupied + pending)
+            
+            # Find available seats
+            available_seats = []
+            for mesa_id in ["1", "2"]:
+                for silla in range(1, 11):  # 10 chairs per table
+                    seat = f"M{mesa_id}-S{silla}"
+                    if seat not in unavailable:
+                        available_seats.append(seat)
+                        if len(available_seats) >= 2:
+                            break
+                if len(available_seats) >= 2:
+                    break
+            
+            if len(available_seats) < 2:
+                print(f"❌ Not enough available seats. Available: {available_seats}")
+                return False
+            
+            test_seats = available_seats[:2]
+            print(f"   Using available seats: {test_seats}")
+        else:
+            print("❌ Failed to check seat availability")
+            return False
+        
         purchase_data = {
             "evento_id": self.test_evento_id,
-            "nombre_comprador": "Test User",
-            "email_comprador": "test@test.com",
+            "nombre_comprador": "Test User 2",
+            "email_comprador": "test2@test.com",
             "telefono_comprador": "1234567",
             "cantidad": 2,
             "precio_total": 100.0,
             "metodo_pago": "efectivo",
-            "asientos": ["M1-S3", "M1-S4"]
+            "asientos": test_seats
         }
         
         response = requests.post(f"{self.api_url}/comprar-entrada", json=purchase_data)
@@ -161,13 +191,14 @@ class SeatSystemTester:
                 entradas = data['entradas']
                 seats_assigned = [entrada.get('asiento') for entrada in entradas if entrada.get('asiento')]
                 
-                if len(seats_assigned) == 2 and "M1-S3" in seats_assigned and "M1-S4" in seats_assigned:
+                if len(seats_assigned) == 2 and all(seat in test_seats for seat in seats_assigned):
                     print("✅ Purchase with seats endpoint working correctly")
                     print(f"   - Tickets created: {len(entradas)}")
                     print(f"   - Seats assigned: {seats_assigned}")
+                    self.purchased_seats = seats_assigned  # Store for verification
                     return True
                 else:
-                    print(f"❌ Seat assignment issue. Expected M1-S3, M1-S4, got {seats_assigned}")
+                    print(f"❌ Seat assignment issue. Expected {test_seats}, got {seats_assigned}")
                     return False
             else:
                 print(f"❌ Unexpected response: {data}")
