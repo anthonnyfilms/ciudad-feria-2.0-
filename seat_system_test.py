@@ -13,6 +13,7 @@ class SeatSystemTester:
         self.api_url = f"{self.base_url}/api"
         self.admin_token = None
         self.test_evento_id = None
+        self.purchased_seats = []
 
     def login_admin(self):
         """Login as admin and get token"""
