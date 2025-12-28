@@ -62,6 +62,9 @@ class Evento(BaseModel):
     link_externo: Optional[str] = None
     asientos_disponibles: int
     categorias_asientos: List[dict] = []
+    # Sistema de asientos
+    tipo_asientos: str = "general"  # "general", "mesas", "mixto"
+    configuracion_asientos: Optional[dict] = None  # Configuración específica del mapa
     fecha_creacion: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class EventoCreate(BaseModel):
@@ -78,6 +81,8 @@ class EventoCreate(BaseModel):
     link_externo: Optional[str] = None
     asientos_disponibles: int = 1000
     categorias_asientos: List[dict] = []
+    tipo_asientos: str = "general"
+    configuracion_asientos: Optional[dict] = None
 
 class EventoUpdate(BaseModel):
     nombre: Optional[str] = None
@@ -93,6 +98,8 @@ class EventoUpdate(BaseModel):
     link_externo: Optional[str] = None
     asientos_disponibles: Optional[int] = None
     categorias_asientos: Optional[List[dict]] = None
+    tipo_asientos: Optional[str] = None
+    configuracion_asientos: Optional[dict] = None
 
 class Categoria(BaseModel):
     model_config = ConfigDict(extra="ignore")
