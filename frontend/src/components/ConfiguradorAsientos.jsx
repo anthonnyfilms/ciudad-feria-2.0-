@@ -242,9 +242,9 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
                         onChange={(e) => actualizarMesa(index, 'categoria', e.target.value)}
                         className="w-full bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
                       >
-                        <option value="General">General</option>
-                        <option value="VIP">VIP</option>
-                        <option value="Premium">Premium</option>
+                        {categoriasMesas.map(cat => (
+                          <option key={cat.id} value={cat.nombre}>{cat.nombre}</option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -261,15 +261,83 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
             ))}
           </div>
 
-          {/* Botón agregar mesa */}
-          <button
-            type="button"
-            onClick={agregarMesa}
-            className="w-full py-3 border-2 border-dashed border-white/20 rounded-xl text-foreground/70 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Agregar Mesa
-          </button>
+          {/* Botones de acciones */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={agregarMesa}
+              className="flex-1 py-3 border-2 border-dashed border-white/20 rounded-xl text-foreground/70 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Agregar Mesa
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setMostrarGestionCategorias(!mostrarGestionCategorias)}
+              className="px-4 py-3 glass-card rounded-xl text-foreground/70 hover:border-primary hover:text-primary transition-all flex items-center gap-2"
+            >
+              <Settings className="w-5 h-5" />
+              Categorías
+            </button>
+          </div>
+
+          {/* Panel de gestión de categorías */}
+          {mostrarGestionCategorias && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="glass-card p-6 rounded-xl border border-primary/30"
+            >
+              <h4 className="font-bold text-foreground mb-4">Gestionar Categorías de Mesas</h4>
+              
+              {/* Lista de categorías existentes */}
+              <div className="space-y-2 mb-4">
+                {categoriasMesas.map(cat => (
+                  <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg bg-background/30">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-4 h-4 rounded-full" 
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      <span className="text-foreground">{cat.nombre}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => eliminarCategoriaMesa(cat.id)}
+                      className="p-1 rounded hover:bg-accent/20 text-accent transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Formulario para nueva categoría */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={nuevaCategoria.nombre}
+                  onChange={(e) => setNuevaCategoria({...nuevaCategoria, nombre: e.target.value})}
+                  placeholder="Nombre de categoría"
+                  className="flex-1 bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+                />
+                <input
+                  type="color"
+                  value={nuevaCategoria.color}
+                  onChange={(e) => setNuevaCategoria({...nuevaCategoria, color: e.target.value})}
+                  className="w-10 h-10 rounded-lg cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={agregarCategoriaMesa}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/80 transition-colors"
+                >
+                  Agregar
+                </button>
+              </div>
+            </motion.div>
+          )}
 
           {/* Entradas generales (solo mixto) */}
           {tipoAsientos === 'mixto' && (
