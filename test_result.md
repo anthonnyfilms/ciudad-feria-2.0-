@@ -162,6 +162,51 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: QR validation endpoint working correctly. Successfully validated QR payload from newly purchased ticket. Endpoint properly handles encrypted QR data and returns validation status."
 
+  - task: "Sistema de asientos - Configurador Admin"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Admin seat configuration endpoint implemented with table-based setup"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: POST /api/admin/eventos/{id}/configurar-asientos working perfectly. Successfully configured table-based seating with 2 VIP tables (10 chairs each). Returns correct capacity_total=20, creates 20 individual seat documents. Admin authentication required and working."
+
+  - task: "Sistema de asientos - Selector Usuario"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Seat selection endpoints implemented: GET /api/eventos/{id}/asientos, POST /api/reservar-asientos"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: GET /api/eventos/{id}/asientos returns all required fields (tipo_asientos, configuracion, capacidad_total, asientos_ocupados, asientos_pendientes, disponibles). POST /api/reservar-asientos successfully reserves specific seats with session tracking and 10-minute expiration."
+
+  - task: "Compra con asientos seleccionados"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Purchase flow updated to handle specific seat assignments"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: POST /api/comprar-entrada with seat selection working perfectly. Successfully purchased 2 tickets with specific seats (M1-S1, M1-S2). Seats correctly assigned to tickets, appear in asientos_pendientes list, and prevent double-booking. Full seat tracking operational."
+
 frontend:
   - task: "Admin Dashboard with statistics"
     implemented: true
