@@ -12,6 +12,7 @@ const SelectorAsientos = ({ eventoId, precioBase = 0, onSeleccionChange, maxSele
   const [asientosSeleccionados, setAsientosSeleccionados] = useState([]);
   const [cantidadGeneral, setCantidadGeneral] = useState(1);
   const [categoriasMesas, setCategoriasMesas] = useState([]);
+  const [seleccionPorCategoria, setSeleccionPorCategoria] = useState({});
 
   useEffect(() => {
     cargarAsientos();
@@ -21,13 +22,28 @@ const SelectorAsientos = ({ eventoId, precioBase = 0, onSeleccionChange, maxSele
   useEffect(() => {
     // Notificar cambios de selección con precios
     if (datosAsientos?.tipo_asientos === 'general') {
+      const detalles = Object.entries(seleccionPorCategoria)
+        .filter(([_, cant]) => cant > 0)
+        .map(([nombre, cantidad]) => {
+          const categoriasGenerales = datosAsientos?.configuracion?.categorias_generales || [];
+          const cat = categoriasGenerales.find(c => c.nombre === nombre);
+          return {
+            tipo: nombre,
+            cantidad,
+            precioUnitario: cat?.precio || precioBase
+          };
+        });
+      
+      const totalCantidad = detalles.reduce((sum, d) => sum + d.cantidad, 0);
+      const precioTotal = detalles.reduce((sum, d) => sum + (d.precioUnitario * d.cantidad), 0);
+      
       onSeleccionChange?.({
         tipo: 'general',
-        cantidad: cantidadGeneral,
+        cantidad: totalCantidad || cantidadGeneral,
         asientos: [],
-        total: cantidadGeneral,
-        precioTotal: precioBase * cantidadGeneral,
-        detalles: [{ tipo: 'General', cantidad: cantidadGeneral, precioUnitario: precioBase }]
+        total: totalCantidad || cantidadGeneral,
+        precioTotal: precioTotal || (precioBase * cantidadGeneral),
+        detalles: detalles.length > 0 ? detalles : [{ tipo: 'General', cantidad: cantidadGeneral, precioUnitario: precioBase }]
       });
     } else {
       // Calcular precio total basado en asientos seleccionados
@@ -43,7 +59,23 @@ const SelectorAsientos = ({ eventoId, precioBase = 0, onSeleccionChange, maxSele
         detalles
       });
     }
-  }, [asientosSeleccionados, cantidadGeneral, datosAsientos]);
+  }, [asientosSeleccionados, cantidadGeneral, datosAsientos, seleccionPorCategoria]);
+
+  const actualizarCantidadCategoria = (categoria, delta, precio) => {
+    setSeleccionPorCategoria(prev => {
+      const actual = prev[categoria] || 0;
+      const nuevo = Math.max(0, Math.min(maxSeleccion, actual + delta));
+      return { ...prev, [categoria]: nuevo };
+    });
+  };
+
+  const calcularTotalGeneral = () => {
+    const categoriasGenerales = datosAsientos?.configuracion?.categorias_generales || [];
+    return Object.entries(seleccionPorCategoria).reduce((total, [nombre, cantidad]) => {
+      const cat = categoriasGenerales.find(c => c.nombre === nombre);
+      return total + ((cat?.precio || precioBase) * cantidad);
+    }, 0);
+  };
 
   const cargarCategoriasMesas = async () => {
     try {
