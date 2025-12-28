@@ -477,15 +477,50 @@ const AdminEventos = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-foreground/80 mb-2 font-medium">URL de la Imagen</label>
-                    <input
-                      type="url"
-                      value={formData.imagen}
-                      onChange={(e) => setFormData({...formData, imagen: e.target.value})}
-                      className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                      required
-                      placeholder="https://..."
-                    />
+                    <label className="block text-foreground/80 mb-2 font-medium">Imagen del Evento</label>
+                    <div className="space-y-3">
+                      {/* Upload de archivo */}
+                      <div className="flex items-center gap-3">
+                        <label className="flex-1 cursor-pointer">
+                          <div className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary transition-all flex items-center gap-3 hover:border-primary/50">
+                            <Upload className="w-5 h-5 text-primary" />
+                            <span className="text-foreground/70">
+                              {uploadingImage ? 'Subiendo...' : 'Seleccionar imagen'}
+                            </span>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            disabled={uploadingImage}
+                          />
+                        </label>
+                      </div>
+                      
+                      {/* Campo URL alternativo */}
+                      <div className="relative">
+                        <input
+                          type="url"
+                          value={formData.imagen}
+                          onChange={(e) => setFormData({...formData, imagen: e.target.value})}
+                          className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm"
+                          placeholder="O pega una URL: https://..."
+                        />
+                      </div>
+                      
+                      {/* Preview de imagen */}
+                      {formData.imagen && (
+                        <div className="mt-2 p-2 glass-card rounded-xl">
+                          <img 
+                            src={formData.imagen} 
+                            alt="Preview" 
+                            className="w-full h-32 object-cover rounded-lg"
+                            onError={(e) => e.target.style.display = 'none'}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-foreground/80 mb-2 font-medium">Link Externo (Opcional)</label>
