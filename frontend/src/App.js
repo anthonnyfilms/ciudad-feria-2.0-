@@ -14,6 +14,7 @@ import AdminConfiguracion from './pages/admin/AdminConfiguracion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import PrivateRoute from './components/PrivateRoute';
+import WhatsAppButton from './components/WhatsAppButton';
 import './App.css';
 
 function App() {
@@ -22,10 +23,10 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<><Navbar /><Home /><Footer /></>} />
-          <Route path="/eventos" element={<><Navbar /><Eventos /><Footer /></>} />
-          <Route path="/evento/:id" element={<><Navbar /><DetalleEvento /><Footer /></>} />
-          <Route path="/mis-entradas" element={<><Navbar /><MisEntradas /><Footer /></>} />
+          <Route path="/" element={<><Navbar /><Home /><Footer /><WhatsAppButton /></>} />
+          <Route path="/eventos" element={<><Navbar /><Eventos /><Footer /><WhatsAppButton /></>} />
+          <Route path="/evento/:id" element={<><Navbar /><DetalleEvento /><Footer /><WhatsAppButton /></>} />
+          <Route path="/mis-entradas" element={<><Navbar /><MisEntradas /><Footer /><WhatsAppButton /></>} />
           
           {/* Admin Routes */}
           <Route path="/secure-admin-panel-2026" element={<AdminLogin />} />
