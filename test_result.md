@@ -284,17 +284,53 @@ frontend:
         agent: "testing"
         comment: "✅ TESTED: User seat selection interface working perfectly. Visual seat map displays correctly with: 1) Stage indicator (🎭 ESCENARIO), 2) Tables arranged with chairs in circular formation around each table, 3) Perfect legend with color coding (Green=Disponible, Yellow=Seleccionado, Orange=Pendiente, Red=Ocupado), 4) Individual numbered chairs (1,2,3...) that are clickable for selection, 5) Real-time seat selection with visual feedback. Both table seating and general seating modes operational."
 
-  - task: "Purchase flow with seat selection"
+  - task: "Admin Configuration - Editable home description"
     implemented: true
-    working: true
-    file: "/app/frontend/src/pages/DetalleEvento.jsx"
+    working: "NA"
+    file: "/app/frontend/src/pages/admin/AdminConfiguracion.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
-      - working: true
-        agent: "testing"
-        comment: "✅ TESTED: Complete purchase flow with seat selection working. Event detail pages accessible from public events listing. Purchase form includes all required fields: buyer name, email, payment method selection, file upload for payment proof. Seat selection integrates seamlessly with purchase process. Form validation and total calculation working correctly. Purchase button enabled when all required fields completed."
+      - working: "NA"
+        agent: "main"
+        comment: "New feature implemented - editable textarea field for home page description in admin configuration panel"
+
+  - task: "Admin Configuration - WhatsApp setup and floating button"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/WhatsAppButton.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New feature implemented - WhatsApp field in admin config and floating button that appears only when WhatsApp number is configured"
+
+  - task: "Event Creation - Image upload by file"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/pages/admin/AdminEventos.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New feature implemented - file upload button for event images with preview, alternative to URL input"
+
+  - task: "Seat Categories Management - Create/delete custom categories"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/ConfiguradorAsientos.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New feature implemented - category management panel in seat configurator with create/delete functionality"
 
 metadata:
   created_by: "main_agent"
