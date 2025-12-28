@@ -217,10 +217,15 @@ class SeatSystemTester:
             data = response.json()
             asientos_pendientes = data.get('asientos_pendientes', [])
             
-            expected_seats = ["M1-S3", "M1-S4"]
+            # Use the seats we actually purchased
+            expected_seats = getattr(self, 'purchased_seats', [])
+            if not expected_seats:
+                print("❌ No purchased seats to verify")
+                return False
+            
             found_seats = [seat for seat in expected_seats if seat in asientos_pendientes]
             
-            if len(found_seats) == 2:
+            if len(found_seats) == len(expected_seats):
                 print("✅ Occupied seats tracking working correctly")
                 print(f"   - Pending seats: {found_seats}")
                 return True
