@@ -127,8 +127,11 @@ const AdminEventos = () => {
       precio: evento.precio,
       imagen: evento.imagen,
       link_externo: evento.link_externo || '',
-      asientos_disponibles: evento.asientos_disponibles
+      asientos_disponibles: evento.asientos_disponibles,
+      tipo_asientos: evento.tipo_asientos || 'general',
+      configuracion_asientos: evento.configuracion_asientos || null
     });
+    setPasoActual(1);
     setMostrarModal(true);
   };
 
@@ -139,12 +142,23 @@ const AdminEventos = () => {
       fecha: '',
       hora: '',
       ubicacion: '',
-      categoria: 'conciertos',
+      categoria: categorias.length > 0 ? categorias[0].slug : '',
       precio: 0,
       imagen: '',
       link_externo: '',
-      asientos_disponibles: 1000
+      asientos_disponibles: 1000,
+      tipo_asientos: 'general',
+      configuracion_asientos: null
     });
+    setPasoActual(1);
+  };
+
+  const handleConfiguracionAsientos = (tipo, config) => {
+    setFormData(prev => ({
+      ...prev,
+      tipo_asientos: tipo,
+      configuracion_asientos: config
+    }));
   };
 
   const menuItems = [
