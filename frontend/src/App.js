@@ -8,6 +8,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminEventos from './pages/admin/AdminEventos';
 import AdminCategorias from './pages/admin/AdminCategorias';
+import AdminCategoriasMesas from './pages/admin/AdminCategoriasMesas';
 import AdminCompras from './pages/admin/AdminCompras';
 import AdminMetodosPago from './pages/admin/AdminMetodosPago';
 import AdminConfiguracion from './pages/admin/AdminConfiguracion';
@@ -36,6 +37,7 @@ function App() {
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="eventos" element={<AdminEventos />} />
                 <Route path="categorias" element={<AdminCategorias />} />
+                <Route path="categorias-mesas" element={<AdminCategoriasMesas />} />
                 <Route path="compras" element={<AdminCompras />} />
                 <Route path="metodos-pago" element={<AdminMetodosPago />} />
                 <Route path="validar" element={<ValidarEntrada />} />
