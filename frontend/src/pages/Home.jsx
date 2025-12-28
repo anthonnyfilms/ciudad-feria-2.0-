@@ -61,7 +61,7 @@ const Home = () => {
       <section
         className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1750323313940-a267ef7d89fa?crop=entropy&cs=srgb&fm=jpg&q=85")',
+          backgroundImage: `url("${config.banner_principal}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
@@ -81,8 +81,7 @@ const Home = () => {
               FERIA 2026
             </h2>
             <p className="text-lg md:text-xl text-foreground/80 max-w-3xl mx-auto mb-12 leading-relaxed">
-              Vive la tradición, cultura y alegría de la feria más importante del Táchira.
-              Asegura tus entradas digitales con códigos QR únicos e incopiables.
+              {config.descripcion_inicio}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
