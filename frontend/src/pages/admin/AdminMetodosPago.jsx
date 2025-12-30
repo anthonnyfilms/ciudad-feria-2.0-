@@ -238,9 +238,20 @@ const AdminMetodosPago = () => {
                   transition={{ delay: index * 0.1 }}
                   className="glass-card rounded-2xl p-6 group hover:border-primary/50 transition-all"
                 >
+                  {/* Imagen del método de pago */}
+                  {metodo.imagen && (
+                    <div className="mb-4 bg-white/5 rounded-xl p-3">
+                      <img 
+                        src={metodo.imagen} 
+                        alt={metodo.nombre} 
+                        className="w-full h-24 object-contain"
+                      />
+                    </div>
+                  )}
+                  
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      {metodo.icono && (
+                      {metodo.icono && !metodo.imagen && (
                         <img src={metodo.icono} alt={metodo.nombre} className="w-12 h-12 object-contain" />
                       )}
                       <div>
