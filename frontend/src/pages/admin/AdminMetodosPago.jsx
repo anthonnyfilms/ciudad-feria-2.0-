@@ -100,6 +100,7 @@ const AdminMetodosPago = () => {
       tipo: metodo.tipo,
       informacion: metodo.informacion,
       icono: metodo.icono || '',
+      imagen: metodo.imagen || '',
       orden: metodo.orden
     });
     setMostrarModal(true);
@@ -111,8 +112,43 @@ const AdminMetodosPago = () => {
       tipo: 'banco',
       informacion: '',
       icono: '',
+      imagen: '',
       orden: 0
     });
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen es muy grande. Máximo 5MB');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes');
+      return;
+    }
+
+    setUploadingImage(true);
+
+    try {
+      const imageFormData = new FormData();
+      imageFormData.append('file', file);
+      
+      const response = await axios.post(`${API}/upload-imagen`, imageFormData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      setFormData({...formData, imagen: `${BACKEND_URL}${response.data.url}`});
+      toast.success('Imagen cargada exitosamente');
+    } catch (error) {
+      console.error('Error subiendo imagen:', error);
+      toast.error('Error al subir la imagen');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const menuItems = [
