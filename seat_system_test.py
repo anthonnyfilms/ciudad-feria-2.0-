@@ -9,7 +9,7 @@ import json
 
 class SeatSystemTester:
     def __init__(self):
-        self.base_url = "https://feriasansebastian.preview.emergentagent.com"
+        self.base_url = "https://sf-tickets.preview.emergentagent.com"
         self.api_url = f"{self.base_url}/api"
         self.admin_token = None
         self.test_evento_id = None
