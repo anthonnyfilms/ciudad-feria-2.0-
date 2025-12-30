@@ -346,15 +346,18 @@ frontend:
 
   - task: "Admin Configuration - WhatsApp setup and floating button"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/frontend/src/components/WhatsAppButton.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "New feature implemented - WhatsApp field in admin config and floating button that appears only when WhatsApp number is configured"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: WhatsApp configuration feature working correctly. Admin configuration panel includes WhatsApp field in redes_sociales object. API endpoint /api/admin/configuracion successfully updates WhatsApp number. Frontend integration confirmed - WhatsApp button component conditionally renders based on configuration."
 
   - task: "Event Creation - Image upload by file"
     implemented: true
