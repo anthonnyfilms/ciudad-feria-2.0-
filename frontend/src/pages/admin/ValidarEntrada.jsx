@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { LayoutDashboard, Calendar, Settings, LogOut, Tag, ShoppingCart, CreditCard, CheckCircle, XCircle, Scan, Shield, Table2 } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { LayoutDashboard, Calendar, Settings, LogOut, Tag, ShoppingCart, CreditCard, CheckCircle, XCircle, Scan, Shield, Table2, Camera, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../../components/ui/sonner';
 
@@ -15,8 +15,9 @@ const ValidarEntrada = () => {
   const [escaneando, setEscaneando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [modoEscaneo, setModoEscaneo] = useState('entrada');
-  const scannerRef = useRef(null);
-  const [scanner, setScanner] = useState(null);
+  const [cameraError, setCameraError] = useState(null);
+  const html5QrCodeRef = useRef(null);
+  const videoContainerRef = useRef(null);
 
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
@@ -38,56 +39,90 @@ const ValidarEntrada = () => {
 
   useEffect(() => {
     return () => {
-      if (scanner) {
-        scanner.clear().catch(console.error);
-      }
+      stopScanner();
     };
-  }, [scanner]);
+  }, []);
+
+  const stopScanner = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        const state = html5QrCodeRef.current.getState();
+        if (state === 2) { // SCANNING state
+          await html5QrCodeRef.current.stop();
+        }
+        html5QrCodeRef.current = null;
+      } catch (err) {
+        console.log('Error stopping scanner:', err);
+      }
+    }
+  };
 
   const iniciarEscaneo = async () => {
     setEscaneando(true);
     setResultado(null);
+    setCameraError(null);
 
-    // Request camera permission explicitly first
+    // Small delay to ensure DOM is ready
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     try {
-      await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-    } catch (permError) {
-      console.error('Error requesting camera permission:', permError);
-      toast.error('No se pudo acceder a la cámara. Por favor, permite el acceso.');
-      setEscaneando(false);
-      return;
-    }
+      // Create new instance
+      html5QrCodeRef.current = new Html5Qrcode("qr-reader-container");
+      
+      const qrCodeSuccessCallback = async (decodedText) => {
+        // Stop scanning immediately after detecting
+        await stopScanner();
+        setEscaneando(false);
+        await validarQR(decodedText);
+      };
 
-    // Wait for DOM to be ready
-    setTimeout(() => {
-      const html5QrcodeScanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          rememberLastUsedCamera: true,
-          supportedScanTypes: [0] // 0 = SCAN_TYPE_CAMERA
-        },
-        false
-      );
+      const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+      };
 
-      html5QrcodeScanner.render(
-        async (decodedText) => {
-          await validarQR(decodedText);
-          html5QrcodeScanner.clear();
-          setEscaneando(false);
-        },
-        (error) => {
-          // Silently ignore scan errors (no QR found yet)
-          if (!error.includes("No MultiFormat Readers")) {
-            console.log(error);
+      // Try back camera first, then any camera
+      try {
+        await html5QrCodeRef.current.start(
+          { facingMode: "environment" },
+          config,
+          qrCodeSuccessCallback,
+          (errorMessage) => {
+            // Ignore "No QR code found" messages
+          }
+        );
+      } catch (err) {
+        console.log('Back camera failed, trying front camera:', err);
+        // Try front camera
+        try {
+          await html5QrCodeRef.current.start(
+            { facingMode: "user" },
+            config,
+            qrCodeSuccessCallback,
+            (errorMessage) => {}
+          );
+        } catch (err2) {
+          // Try any available camera
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras && cameras.length > 0) {
+            await html5QrCodeRef.current.start(
+              cameras[0].id,
+              config,
+              qrCodeSuccessCallback,
+              (errorMessage) => {}
+            );
+          } else {
+            throw new Error('No se encontraron cámaras disponibles');
           }
         }
-      );
-
-      setScanner(html5QrcodeScanner);
-    }, 200);
+      }
+    } catch (err) {
+      console.error('Error starting scanner:', err);
+      setCameraError(err.message || 'Error al iniciar la cámara');
+      toast.error('Error al iniciar la cámara: ' + (err.message || 'Verifica los permisos'));
+      setEscaneando(false);
+    }
   };
 
   const validarQR = async (qrPayload) => {
@@ -101,11 +136,9 @@ const ValidarEntrada = () => {
 
       if (response.data.valido) {
         toast.success(response.data.mensaje);
-        // Sonido de éxito
         playSound(true);
       } else {
         toast.error(response.data.mensaje);
-        // Sonido de alerta
         if (response.data.tipo_alerta) {
           playSound(false);
         }
@@ -139,7 +172,6 @@ const ValidarEntrada = () => {
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.2);
       } else {
-        // Alerta de 3 pitidos
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
             const osc = audioContext.createOscillator();
@@ -157,12 +189,11 @@ const ValidarEntrada = () => {
     }
   };
 
-  const reiniciarEscaneo = () => {
-    if (scanner) {
-      scanner.clear().catch(console.error);
-    }
+  const reiniciarEscaneo = async () => {
+    await stopScanner();
     setResultado(null);
     setEscaneando(false);
+    setCameraError(null);
   };
 
   return (
