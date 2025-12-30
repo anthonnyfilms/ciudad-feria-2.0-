@@ -273,10 +273,10 @@ def generar_qr_seguro(datos: dict) -> str:
     payload = base64.b64encode(iv + datos_encriptados).decode()
     
     qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_H,
-        box_size=10,
-        border=4,
+        version=None,  # Auto-detect version based on data
+        error_correction=qrcode.constants.ERROR_CORRECT_M,  # Medium error correction for better readability
+        box_size=12,  # Larger boxes for better scanning
+        border=6,  # Larger border for better detection
     )
     qr.add_data(payload)
     qr.make(fit=True)
