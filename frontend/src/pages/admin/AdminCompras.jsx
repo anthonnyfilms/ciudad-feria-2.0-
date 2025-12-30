@@ -385,6 +385,13 @@ const AdminCompras = () => {
                               ✉️ Email enviado
                             </p>
                           )}
+                          <button
+                            onClick={() => handleEliminarEntrada(compra.id)}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all font-medium mt-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Eliminar Entrada
+                          </button>
                         </div>
                       )}
                     </div>
