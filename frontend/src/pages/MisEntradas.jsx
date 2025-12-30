@@ -161,9 +161,48 @@ const MisEntradas = () => {
                         <h3 className="text-2xl font-heading font-bold text-foreground mb-2">
                           {entrada.nombre_evento}
                         </h3>
-                        <p className="text-foreground/70">
-                          {entrada.nombre_comprador}
+                        <p className="text-foreground/70 text-lg">
+                          👤 {entrada.nombre_comprador}
                         </p>
+                      </div>
+
+                      {/* Información de ubicación */}
+                      <div className="bg-white/5 rounded-xl p-4 space-y-2">
+                        {entrada.categoria_asiento && (
+                          <div className="flex items-center gap-2 text-foreground">
+                            <span className="text-primary">🎫</span>
+                            <span className="font-medium">Categoría:</span>
+                            <span className="text-primary font-bold">{entrada.categoria_asiento}</span>
+                          </div>
+                        )}
+                        {entrada.mesa && (
+                          <div className="flex items-center gap-2 text-foreground">
+                            <span className="text-primary">🪑</span>
+                            <span className="font-medium">Mesa:</span>
+                            <span className="text-primary font-bold">{entrada.mesa}</span>
+                          </div>
+                        )}
+                        {entrada.silla && (
+                          <div className="flex items-center gap-2 text-foreground">
+                            <span className="text-primary">💺</span>
+                            <span className="font-medium">Silla:</span>
+                            <span className="text-primary font-bold">#{entrada.silla}</span>
+                          </div>
+                        )}
+                        {entrada.asiento && !entrada.mesa && (
+                          <div className="flex items-center gap-2 text-foreground">
+                            <span className="text-primary">🪑</span>
+                            <span className="font-medium">Ubicación:</span>
+                            <span className="text-primary font-bold">{entrada.asiento}</span>
+                          </div>
+                        )}
+                        {entrada.codigo_alfanumerico && (
+                          <div className="flex items-center gap-2 text-foreground/70 text-sm mt-2 pt-2 border-t border-white/10">
+                            <span>📋</span>
+                            <span>Código:</span>
+                            <span className="font-mono text-primary">{entrada.codigo_alfanumerico}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -173,11 +212,6 @@ const MisEntradas = () => {
                             Comprado: {new Date(entrada.fecha_compra).toLocaleDateString()}
                           </span>
                         </div>
-                        {entrada.asiento && (
-                          <div className="text-foreground/80 font-medium">
-                            🪑 Asiento: {entrada.asiento}
-                          </div>
-                        )}
                         {entrada.codigo_alfanumerico && entrada.estado_pago === 'aprobado' && (
                           <div className="glass-card p-3 rounded-xl">
                             <p className="text-xs text-foreground/50 mb-1">Código:</p>
