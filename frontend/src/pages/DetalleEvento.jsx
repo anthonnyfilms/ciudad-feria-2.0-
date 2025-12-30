@@ -451,6 +451,16 @@ const DetalleEvento = () => {
                     </select>
                     {metodoPago && metodosPago.find(m => m.id === metodoPago) && (
                       <div className="mt-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                        {/* Imagen del método de pago */}
+                        {metodosPago.find(m => m.id === metodoPago).imagen && (
+                          <div className="mb-4 bg-white rounded-xl p-3">
+                            <img 
+                              src={metodosPago.find(m => m.id === metodoPago).imagen} 
+                              alt="Método de pago" 
+                              className="max-h-32 mx-auto object-contain"
+                            />
+                          </div>
+                        )}
                         <p className="text-sm text-foreground/80 whitespace-pre-line">
                           {metodosPago.find(m => m.id === metodoPago).informacion}
                         </p>
