@@ -258,66 +258,80 @@ const DetalleEvento = () => {
           Volver a eventos
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Imagen del Evento */}
+        <div className="space-y-8">
+          {/* Imagen del Evento - Siempre arriba */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="glass-card rounded-3xl overflow-hidden"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card rounded-3xl overflow-hidden max-w-4xl mx-auto"
           >
             <img
               src={evento.imagen}
               alt={evento.nombre}
-              className="w-full h-full object-cover min-h-[400px]"
+              className="w-full h-auto max-h-[500px] object-cover"
             />
           </motion.div>
 
           {/* Detalles y Formulario */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            <h1 className="text-4xl font-heading font-black text-primary glow-text mb-4">
-              {evento.nombre}
-            </h1>
-            <p className="text-lg text-foreground/80 mb-6">
-              {evento.descripcion}
-            </p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Info del evento - Columna izquierda */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="lg:col-span-1"
+            >
+              <h1 className="text-3xl lg:text-4xl font-heading font-black text-primary glow-text mb-4">
+                {evento.nombre}
+              </h1>
+              <p className="text-base text-foreground/80 mb-6">
+                {evento.descripcion}
+              </p>
 
-            <div className="space-y-4 mb-8 glass-card p-6 rounded-2xl">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-5 h-5 text-primary" />
-                <span className="text-foreground">{evento.fecha} - {evento.hora}</span>
+              <div className="space-y-4 glass-card p-6 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 text-primary" />
+                  <span className="text-foreground">{evento.fecha} - {evento.hora}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <span className="text-foreground">{evento.ubicacion}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Ticket className="w-5 h-5 text-primary" />
+                  <span className="text-foreground">
+                    {evento.asientos_disponibles} asientos disponibles
+                  </span>
+                </div>
+                <div className="border-t border-white/10 pt-4 mt-4">
+                  <span className="text-foreground/60 text-sm">Desde</span>
+                  <p className="text-3xl font-black text-primary">${evento.precio}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-primary" />
-                <span className="text-foreground">{evento.ubicacion}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Ticket className="w-5 h-5 text-primary" />
-                <span className="text-foreground">
-                  {evento.asientos_disponibles} asientos disponibles
-                </span>
-              </div>
-            </div>
+            </motion.div>
 
-            <div className="glass-card p-8 rounded-3xl">
-              <h3 className="text-2xl font-heading font-bold text-foreground mb-6">
-                Comprar Entradas
-              </h3>
+            {/* Formulario de compra - Columnas derechas */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="lg:col-span-2"
+            >
+              <div className="glass-card p-6 lg:p-8 rounded-3xl">
+                <h3 className="text-2xl font-heading font-bold text-foreground mb-6">
+                  Comprar Entradas
+                </h3>
 
-              {/* Paso 1: Selector de Asientos (si aplica) */}
-              {evento.tipo_asientos && evento.tipo_asientos !== 'general' && pasoCompra === 1 && (
-                <div className="space-y-6">
-                  <p className="text-foreground/70 text-center mb-4">
-                    Selecciona tus sillas en el mapa
-                  </p>
-                  <SelectorAsientos
-                    eventoId={id}
-                    precioBase={evento.precio}
-                    onSeleccionChange={handleSeleccionAsientos}
-                    maxSeleccion={10}
-                  />
+                {/* Paso 1: Selector de Asientos (si aplica) */}
+                {evento.tipo_asientos && evento.tipo_asientos !== 'general' && pasoCompra === 1 && (
+                  <div className="space-y-6">
+                    <p className="text-foreground/70 text-center mb-4">
+                      Selecciona tus sillas en el mapa
+                    </p>
+                    <SelectorAsientos
+                      eventoId={id}
+                      precioBase={evento.precio}
+                      onSeleccionChange={handleSeleccionAsientos}
+                      maxSeleccion={10}
+                    />
                   
                   {seleccionAsientos.asientos.length > 0 && (
                     <motion.button
