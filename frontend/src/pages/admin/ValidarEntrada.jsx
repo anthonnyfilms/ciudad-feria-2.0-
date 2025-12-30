@@ -288,16 +288,55 @@ const ValidarEntrada = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="glass-card p-8 rounded-3xl"
+            className="glass-card p-6 rounded-3xl"
           >
-            <div id="qr-reader" className="rounded-xl overflow-hidden mb-6"></div>
-            <button
-              onClick={reiniciarEscaneo}
-              className="w-full glass-card px-8 py-4 rounded-full font-bold text-foreground hover:border-primary/50 transition-all"
-              data-testid="button-cancelar-escaneo"
-            >
-              Cancelar Escaneo
-            </button>
+            <div className="flex items-center gap-2 mb-4">
+              <Camera className="w-5 h-5 text-primary animate-pulse" />
+              <span className="text-foreground font-medium">Cámara activa - Apunta al código QR</span>
+            </div>
+            
+            {/* Video container with explicit dimensions */}
+            <div 
+              id="qr-reader-container" 
+              ref={videoContainerRef}
+              className="rounded-xl overflow-hidden mb-6 bg-black"
+              style={{ 
+                width: '100%', 
+                minHeight: '350px',
+                maxWidth: '500px',
+                margin: '0 auto'
+              }}
+            ></div>
+
+            {cameraError && (
+              <div className="bg-accent/20 border border-accent/50 rounded-xl p-4 mb-4 text-center">
+                <p className="text-accent font-medium">{cameraError}</p>
+                <p className="text-foreground/60 text-sm mt-2">
+                  Verifica que has dado permisos de cámara al navegador
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={reiniciarEscaneo}
+                className="flex-1 glass-card px-6 py-4 rounded-full font-bold text-foreground hover:border-accent/50 transition-all flex items-center justify-center gap-2"
+                data-testid="button-cancelar-escaneo"
+              >
+                <XCircle className="w-5 h-5" />
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  await reiniciarEscaneo();
+                  setTimeout(() => iniciarEscaneo(), 500);
+                }}
+                className="flex-1 glass-card px-6 py-4 rounded-full font-bold text-foreground hover:border-primary/50 transition-all flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Reiniciar
+              </button>
+            </div>
           </motion.div>
         )}
 
