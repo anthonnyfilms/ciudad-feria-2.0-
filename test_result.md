@@ -207,6 +207,42 @@ backend:
         agent: "testing"
         comment: "✅ TESTED: POST /api/comprar-entrada with seat selection working perfectly. Successfully purchased 2 tickets with specific seats (M1-S1, M1-S2). Seats correctly assigned to tickets, appear in asientos_pendientes list, and prevent double-booking. Full seat tracking operational."
 
+  - task: "Generación de imagen de entrada"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "NEW: Implemented ticket image generation endpoint GET /api/entrada/{id}/imagen. Uses PIL to generate PNG image with event background, QR code positioned according to admin config, and buyer info panel. Returns downloadable image."
+
+  - task: "Aprobar y enviar email endpoint"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "NEW: Implemented POST /api/admin/aprobar-y-enviar endpoint. Approves purchase and sends ticket image by email using Gmail SMTP. Requires GMAIL_USER and GMAIL_APP_PASSWORD env vars. Also added POST /api/admin/reenviar-entrada/{id} and GET /api/admin/email-config."
+
+  - task: "QR seguro con firma HMAC"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "NEW: Added HMAC signature to QR codes for anti-forgery protection. QR data is encrypted with AES and signed with HMAC-SHA256. Includes nonce to prevent replay attacks."
+
 frontend:
   - task: "Admin Dashboard with statistics"
     implemented: true
