@@ -34,7 +34,12 @@ const Eventos = () => {
 
   const eventosFiltrados = categoriaSeleccionada === 'todas'
     ? eventos
-    : eventos.filter(e => e.categoria === categoriaSeleccionada);
+    : eventos.filter(e => {
+        // Comparar con categoria, categoria_id o slug
+        return e.categoria === categoriaSeleccionada || 
+               e.categoria_id === categoriaSeleccionada ||
+               e.categoria?.toLowerCase() === categoriaSeleccionada.toLowerCase();
+      });
 
   const categoriasConTodas = [
     { id: 'todas', nombre: 'Todos', slug: 'todas' },
