@@ -707,6 +707,15 @@ def main():
             print("✅ Seat selection system fully functional!")
         else:
             print("❌ Seat selection system has issues")
+        
+        # Test 10: TICKET IMAGE & EMAIL SYSTEM (NEW)
+        print("\n🎫 Testing Ticket Image & Email System...")
+        ticket_system_success = tester.test_ticket_email_system_complete(admin_token)
+        
+        if ticket_system_success:
+            print("✅ Ticket image & email system fully functional!")
+        else:
+            print("❌ Ticket image & email system has issues")
     else:
         print("❌ Cannot test admin functionality without valid token")
     
