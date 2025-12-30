@@ -46,6 +46,7 @@ function App() {
                 <Route path="validar" element={<ValidarEntrada />} />
                 <Route path="diseno-entrada" element={<AdminDisenoEntrada />} />
                 <Route path="usuarios" element={<AdminUsuarios />} />
+                <Route path="asistencia" element={<AdminAsistencia />} />
                 <Route path="configuracion" element={<AdminConfiguracion />} />
               </Routes>
             </PrivateRoute>
