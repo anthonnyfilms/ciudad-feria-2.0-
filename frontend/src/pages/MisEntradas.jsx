@@ -203,14 +203,22 @@ const MisEntradas = () => {
                       </div>
 
                       {entrada.estado_pago === 'aprobado' && (
-                        <div className="pt-4">
+                        <div className="pt-4 flex flex-wrap gap-3">
                           <button
-                            onClick={() => descargarEntrada(entrada)}
+                            onClick={() => descargarEntradaCompleta(entrada.id)}
                             className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full font-bold hover:shadow-lg transition-all"
-                            data-testid={`download-button-${index}`}
+                            data-testid={`download-full-button-${index}`}
                           >
                             <Download className="w-4 h-4" />
-                            Descargar QR
+                            Descargar Entrada
+                          </button>
+                          <button
+                            onClick={() => descargarEntrada(entrada)}
+                            className="flex items-center gap-2 glass-card px-6 py-3 rounded-full font-medium hover:border-primary transition-all"
+                            data-testid={`download-qr-button-${index}`}
+                          >
+                            <Download className="w-4 h-4" />
+                            Solo QR
                           </button>
                         </div>
                       )}
