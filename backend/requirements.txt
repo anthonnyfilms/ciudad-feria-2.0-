@@ -71,3 +71,5 @@ tzdata==2025.2
 urllib3==2.6.1
 uvicorn==0.25.0
 watchfiles==1.1.1
+aiosmtplib==5.0.0
+email-validator==2.3.0
