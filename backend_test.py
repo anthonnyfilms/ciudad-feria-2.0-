@@ -336,6 +336,264 @@ class CiudadFeriaAPITester:
         
         return success, data
 
+    # ==================== TICKET IMAGE & EMAIL SYSTEM TESTS ====================
+    
+    def test_approve_purchase(self, entrada_ids, token):
+        """Test approving a purchase (required before image generation)"""
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {token}'
+        }
+        
+        approval_data = {
+            "entrada_ids": entrada_ids
+        }
+        
+        success, data = self.run_test(f"Approve Purchase ({len(entrada_ids)} tickets)", "POST", "admin/aprobar-compra", 200, approval_data, headers)
+        
+        if success:
+            if data.get('aprobadas', 0) > 0:
+                print(f"   ✅ Purchase approval successful")
+                print(f"   📋 Approved Tickets: {data.get('aprobadas', 0)}")
+                return True, data
+            else:
+                self.log_test("Purchase Approval Check", False, f"Expected approved > 0, got {data}")
+                return False, data
+        
+        return success, data
+
+    def test_ticket_image_generation(self, entrada_id):
+        """Test ticket image generation endpoint"""
+        success, response_data = self.run_test(f"Generate Ticket Image ({entrada_id[:8]}...)", "GET", f"entrada/{entrada_id}/imagen", 200)
+        
+        # For image endpoints, we need to check the response differently
+        url = f"{self.api_url}/entrada/{entrada_id}/imagen"
+        print(f"\n🖼️ Testing Ticket Image Generation...")
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code == 200:
+                # Check if it's actually an image
+                content_type = response.headers.get('content-type', '')
+                if 'image/png' in content_type:
+                    content_length = len(response.content)
+                    print(f"   ✅ Image generated successfully")
+                    print(f"   📄 Content-Type: {content_type}")
+                    print(f"   📏 Image Size: {content_length} bytes")
+                    self.log_test(f"Generate Ticket Image ({entrada_id[:8]}...)", True)
+                    return True, {"content_type": content_type, "size": content_length}
+                else:
+                    error_msg = f"Expected image/png, got {content_type}"
+                    self.log_test(f"Generate Ticket Image ({entrada_id[:8]}...)", False, error_msg)
+                    return False, {}
+            elif response.status_code == 403:
+                error_msg = "Ticket not approved yet (403 Forbidden)"
+                print(f"   ❌ {error_msg}")
+                self.log_test(f"Generate Ticket Image ({entrada_id[:8]}...)", False, error_msg)
+                return False, {}
+            else:
+                error_msg = f"Expected 200, got {response.status_code}"
+                try:
+                    error_detail = response.json()
+                    error_msg += f" - {error_detail}"
+                except:
+                    error_msg += f" - {response.text[:200]}"
+                
+                self.log_test(f"Generate Ticket Image ({entrada_id[:8]}...)", False, error_msg)
+                return False, {}
+
+        except Exception as e:
+            error_msg = f"Request failed: {str(e)}"
+            self.log_test(f"Generate Ticket Image ({entrada_id[:8]}...)", False, error_msg)
+            return False, {}
+
+    def test_ticket_image_unapproved(self, entrada_id):
+        """Test that unapproved tickets return 403 for image generation"""
+        url = f"{self.api_url}/entrada/{entrada_id}/imagen"
+        print(f"\n🚫 Testing Unapproved Ticket Image Access...")
+        print(f"   URL: {url}")
+        
+        try:
+            response = requests.get(url, timeout=30)
+            
+            if response.status_code == 403:
+                print(f"   ✅ Correctly blocked unapproved ticket (403)")
+                self.log_test(f"Block Unapproved Ticket Image ({entrada_id[:8]}...)", True)
+                return True, {}
+            else:
+                error_msg = f"Expected 403 for unapproved ticket, got {response.status_code}"
+                self.log_test(f"Block Unapproved Ticket Image ({entrada_id[:8]}...)", False, error_msg)
+                return False, {}
+
+        except Exception as e:
+            error_msg = f"Request failed: {str(e)}"
+            self.log_test(f"Block Unapproved Ticket Image ({entrada_id[:8]}...)", False, error_msg)
+            return False, {}
+
+    def test_email_config(self, token):
+        """Test email configuration endpoint"""
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {token}'
+        }
+        
+        success, data = self.run_test("Email Configuration Check", "GET", "admin/email-config", 200, headers=headers)
+        
+        if success:
+            # Check required fields
+            if 'configurado' in data and 'email' in data:
+                print(f"   ✅ Email config endpoint working")
+                print(f"   📧 Email Configured: {data.get('configurado', False)}")
+                print(f"   📧 Email Address: {data.get('email', 'None')}")
+                return True, data
+            else:
+                self.log_test("Email Config Fields Check", False, f"Missing required fields in response: {data}")
+                return False, data
+        
+        return success, data
+
+    def test_approve_and_send_email(self, entrada_ids, token):
+        """Test approve and send email endpoint"""
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {token}'
+        }
+        
+        approval_data = {
+            "entrada_ids": entrada_ids
+        }
+        
+        success, data = self.run_test(f"Approve and Send Email ({len(entrada_ids)} tickets)", "POST", "admin/aprobar-y-enviar", 200, approval_data, headers)
+        
+        if success:
+            # Check response fields
+            required_fields = ['aprobadas', 'emails_enviados', 'emails_fallidos', 'email_configurado']
+            missing_fields = []
+            
+            for field in required_fields:
+                if field not in data:
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                self.log_test("Approve and Send Response Check", False, f"Missing fields: {missing_fields}")
+                return False, data
+            else:
+                print(f"   ✅ Approve and send endpoint working")
+                print(f"   📋 Approved: {data.get('aprobadas', 0)}")
+                print(f"   📧 Emails Sent: {data.get('emails_enviados', 0)}")
+                print(f"   📧 Emails Failed: {data.get('emails_fallidos', 0)}")
+                print(f"   📧 Email Configured: {data.get('email_configurado', False)}")
+                
+                # Since Gmail is not configured, we expect emails_fallidos > 0
+                if not data.get('email_configurado', False) and data.get('emails_fallidos', 0) > 0:
+                    print(f"   ✅ Expected behavior: emails failed due to no Gmail config")
+                
+                return True, data
+        
+        return success, data
+
+    def test_ticket_email_system_complete(self, token):
+        """Run complete ticket image and email system test suite"""
+        print("\n🎫 TICKET IMAGE & EMAIL SYSTEM TESTING")
+        print("=" * 50)
+        
+        # Get events to test with
+        success, eventos = self.test_list_eventos()
+        if not success or not eventos:
+            print("❌ Cannot test ticket system without events")
+            return False
+        
+        # Use first event for testing
+        evento = eventos[0]
+        evento_id = evento.get('id')
+        evento_nombre = evento.get('nombre', 'Unknown Event')
+        
+        if not evento_id:
+            print("❌ No valid event ID found")
+            return False
+        
+        print(f"\n🎪 Testing with event: {evento_nombre}")
+        
+        # Test 1: Create a new purchase for testing
+        print(f"\n1️⃣ Creating test purchase...")
+        compra_data = {
+            "evento_id": evento_id,
+            "nombre_comprador": "Carlos Mendez",
+            "email_comprador": "carlos@example.com",
+            "telefono_comprador": "1234567890",
+            "cantidad": 1,
+            "precio_total": 25.0,
+            "metodo_pago": "transferencia"
+        }
+        
+        success1, purchase_data = self.run_test("Create Test Purchase", "POST", "comprar-entrada", 200, compra_data)
+        
+        if not success1 or not purchase_data.get('entradas'):
+            print("❌ Cannot continue without test purchase")
+            return False
+        
+        entrada = purchase_data['entradas'][0]
+        entrada_id = entrada.get('id')
+        
+        if not entrada_id:
+            print("❌ No valid entrada ID found")
+            return False
+        
+        print(f"   🎫 Test Ticket ID: {entrada_id[:8]}...")
+        
+        # Test 2: Try to get image before approval (should fail with 403)
+        print(f"\n2️⃣ Testing image access before approval...")
+        success2, _ = self.test_ticket_image_unapproved(entrada_id)
+        
+        # Test 3: Check email configuration
+        print(f"\n3️⃣ Testing email configuration...")
+        success3, email_config = self.test_email_config(token)
+        
+        # Test 4: Approve the purchase
+        print(f"\n4️⃣ Testing purchase approval...")
+        success4, _ = self.test_approve_purchase([entrada_id], token)
+        
+        # Test 5: Generate ticket image after approval
+        print(f"\n5️⃣ Testing ticket image generation...")
+        success5, _ = self.test_ticket_image_generation(entrada_id)
+        
+        # Test 6: Test approve and send email endpoint
+        print(f"\n6️⃣ Creating another purchase for email test...")
+        compra_data2 = {
+            "evento_id": evento_id,
+            "nombre_comprador": "Ana Garcia",
+            "email_comprador": "ana@example.com",
+            "telefono_comprador": "0987654321",
+            "cantidad": 1,
+            "precio_total": 25.0,
+            "metodo_pago": "efectivo"
+        }
+        
+        success6a, purchase_data2 = self.run_test("Create Second Test Purchase", "POST", "comprar-entrada", 200, compra_data2)
+        
+        if success6a and purchase_data2.get('entradas'):
+            entrada2 = purchase_data2['entradas'][0]
+            entrada2_id = entrada2.get('id')
+            
+            print(f"\n7️⃣ Testing approve and send email...")
+            success6, _ = self.test_approve_and_send_email([entrada2_id], token)
+        else:
+            print("❌ Cannot test approve and send without second purchase")
+            success6 = False
+        
+        # Summary
+        all_tests = [success1, success2, success3, success4, success5, success6]
+        passed_tests = sum(all_tests)
+        total_tests = len(all_tests)
+        
+        print(f"\n🎫 TICKET SYSTEM TEST SUMMARY:")
+        print(f"   Tests Passed: {passed_tests}/{total_tests}")
+        print(f"   Success Rate: {(passed_tests/total_tests*100):.1f}%")
+        
+        return passed_tests == total_tests
+
     def test_seat_system_complete(self, token):
         """Run complete seat selection system test suite"""
         print("\n🪑 SEAT SELECTION SYSTEM TESTING")
