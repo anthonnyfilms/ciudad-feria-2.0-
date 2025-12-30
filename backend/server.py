@@ -663,6 +663,9 @@ async def actualizar_configuracion_admin(config: ConfiguracionSitio, current_use
     await db.configuracion.delete_many({})
     await db.configuracion.insert_one(config_dict)
     
+    # Eliminar _id para la respuesta
+    config_dict.pop('_id', None)
+    
     return {"message": "Configuración actualizada exitosamente", "config": config_dict}
 
 @api_router.get("/admin/estadisticas")
