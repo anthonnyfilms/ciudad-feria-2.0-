@@ -704,6 +704,75 @@ async def eliminar_evento_admin(evento_id: str, current_user: str = Depends(get_
         raise HTTPException(status_code=404, detail="Evento no encontrado")
     return {"message": "Evento eliminado exitosamente"}
 
+# Endpoint para eliminar entradas (incluso verificadas)
+@api_router.delete("/admin/entradas/{entrada_id}")
+async def eliminar_entrada_admin(entrada_id: str, current_user: str = Depends(get_current_user)):
+    """Eliminar una entrada (incluso si está verificada)"""
+    result = await db.entradas.delete_one({"id": entrada_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Entrada no encontrada")
+    return {"message": "Entrada eliminada exitosamente"}
+
+# Estadísticas de asistencia por evento
+@api_router.get("/admin/eventos/{evento_id}/asistencia")
+async def obtener_asistencia_evento(evento_id: str, current_user: str = Depends(get_current_user)):
+    """Obtener estadísticas de asistencia (quiénes han entrado) por evento"""
+    
+    evento = await db.eventos.find_one({"id": evento_id}, {"_id": 0})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    
+    # Total de entradas vendidas para este evento
+    total_vendidas = await db.entradas.count_documents({
+        "evento_id": evento_id,
+        "estado_pago": "aprobado"
+    })
+    
+    # Entradas que han sido usadas (escaneadas para entrada)
+    entradas_usadas = await db.entradas.count_documents({
+        "evento_id": evento_id,
+        "estado_pago": "aprobado",
+        "usado": True
+    })
+    
+    # Entradas por categoría
+    pipeline_categorias = [
+        {"$match": {"evento_id": evento_id, "estado_pago": "aprobado"}},
+        {"$group": {
+            "_id": "$categoria_asiento",
+            "total": {"$sum": 1},
+            "han_entrado": {"$sum": {"$cond": [{"$eq": ["$usado", True]}, 1, 0]}}
+        }},
+        {"$sort": {"total": -1}}
+    ]
+    
+    categorias_cursor = db.entradas.aggregate(pipeline_categorias)
+    categorias_stats = []
+    async for cat in categorias_cursor:
+        categorias_stats.append({
+            "categoria": cat["_id"] or "Sin categoría",
+            "total_vendidas": cat["total"],
+            "han_entrado": cat["han_entrado"],
+            "pendientes": cat["total"] - cat["han_entrado"]
+        })
+    
+    # Últimas entradas registradas
+    ultimas_entradas = await db.entradas.find(
+        {"evento_id": evento_id, "estado_pago": "aprobado", "usado": True},
+        {"_id": 0, "nombre_comprador": 1, "categoria_asiento": 1, "asiento": 1, "hora_entrada": 1}
+    ).sort("hora_entrada", -1).limit(10).to_list(10)
+    
+    return {
+        "evento": evento.get("nombre"),
+        "evento_id": evento_id,
+        "total_vendidas": total_vendidas,
+        "han_entrado": entradas_usadas,
+        "pendientes_entrar": total_vendidas - entradas_usadas,
+        "porcentaje_asistencia": round((entradas_usadas / total_vendidas * 100) if total_vendidas > 0 else 0, 1),
+        "por_categoria": categorias_stats,
+        "ultimas_entradas": ultimas_entradas
+    }
+
 @api_router.put("/admin/configuracion")
 async def actualizar_configuracion_admin(config: ConfiguracionSitio, current_user: str = Depends(get_current_user)):
     config_dict = config.model_dump()
