@@ -13,6 +13,7 @@ import AdminCompras from './pages/admin/AdminCompras';
 import AdminMetodosPago from './pages/admin/AdminMetodosPago';
 import AdminConfiguracion from './pages/admin/AdminConfiguracion';
 import AdminDisenoEntrada from './pages/admin/AdminDisenoEntrada';
+import AdminUsuarios from './pages/admin/AdminUsuarios';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import PrivateRoute from './components/PrivateRoute';
@@ -43,6 +44,7 @@ function App() {
                 <Route path="metodos-pago" element={<AdminMetodosPago />} />
                 <Route path="validar" element={<ValidarEntrada />} />
                 <Route path="diseno-entrada" element={<AdminDisenoEntrada />} />
+                <Route path="usuarios" element={<AdminUsuarios />} />
                 <Route path="configuracion" element={<AdminConfiguracion />} />
               </Routes>
             </PrivateRoute>
