@@ -614,16 +614,65 @@ async def admin_login(login: AdminLogin):
         # Create default admin on first login attempt
         if login.username == "admin" and login.password == "admin123":
             hashed = get_password_hash("admin123")
-            await db.admin_users.insert_one({"username": "admin", "hashed_password": hashed})
-            admin = {"username": "admin", "hashed_password": hashed}
+            await db.admin_users.insert_one({
+                "username": "admin", 
+                "hashed_password": hashed,
+                "role": "admin"
+            })
+            admin = {"username": "admin", "hashed_password": hashed, "role": "admin"}
         else:
             raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
     
     if not verify_password(login.password, admin["hashed_password"]):
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
     
-    access_token = create_access_token(data={"sub": admin["username"]})
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Include role in token
+    role = admin.get("role", "admin")
+    access_token = create_access_token(data={"sub": admin["username"], "role": role})
+    return {"access_token": access_token, "token_type": "bearer", "role": role}
+
+# User Management
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: str = "validador"  # admin, validador
+
+@api_router.get("/admin/usuarios")
+async def listar_usuarios(current_user: str = Depends(get_current_user)):
+    """Lista todos los usuarios del sistema"""
+    usuarios = await db.admin_users.find({}, {"_id": 0, "hashed_password": 0}).to_list(100)
+    return usuarios
+
+@api_router.post("/admin/usuarios")
+async def crear_usuario(user: UserCreate, current_user: str = Depends(get_current_user)):
+    """Crea un nuevo usuario (solo admin puede crear)"""
+    # Check if user exists
+    existing = await db.admin_users.find_one({"username": user.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="El usuario ya existe")
+    
+    hashed = get_password_hash(user.password)
+    new_user = {
+        "username": user.username,
+        "hashed_password": hashed,
+        "role": user.role,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.admin_users.insert_one(new_user)
+    
+    return {"message": f"Usuario {user.username} creado con rol {user.role}", "username": user.username, "role": user.role}
+
+@api_router.delete("/admin/usuarios/{username}")
+async def eliminar_usuario(username: str, current_user: str = Depends(get_current_user)):
+    """Elimina un usuario (no puede eliminarse el admin principal)"""
+    if username == "admin":
+        raise HTTPException(status_code=400, detail="No se puede eliminar el usuario admin principal")
+    
+    result = await db.admin_users.delete_one({"username": username})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    return {"message": f"Usuario {username} eliminado"}
 
 @api_router.post("/admin/eventos", response_model=Evento)
 async def crear_evento_admin(evento: EventoCreate, current_user: str = Depends(get_current_user)):
