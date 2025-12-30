@@ -551,7 +551,6 @@ const DetalleEvento = () => {
                   </motion.button>
                 </form>
               )}
-            </div>
               </div>
             </motion.div>
           </div>
