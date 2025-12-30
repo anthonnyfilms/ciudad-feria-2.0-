@@ -31,10 +31,10 @@ const AdminDisenoEntrada = () => {
   }, []);
 
   useEffect(() => {
-    if (eventoSeleccionado) {
+    if (eventoSeleccionado && eventos.length > 0) {
       cargarConfiguracionEvento();
     }
-  }, [eventoSeleccionado]);
+  }, [eventoSeleccionado, eventos]);
 
   const cargarEventos = async () => {
     try {
@@ -43,7 +43,7 @@ const AdminDisenoEntrada = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEventos(response.data);
-      if (response.data.length > 0) {
+      if (response.data.length > 0 && !eventoSeleccionado) {
         setEventoSeleccionado(response.data[0].id);
       }
     } catch (error) {
