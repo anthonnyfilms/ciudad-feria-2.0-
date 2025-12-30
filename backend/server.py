@@ -1124,6 +1124,409 @@ async def eliminar_categoria_mesa(categoria_id: str, current_user: str = Depends
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     return {"success": True, "message": "Categoría eliminada"}
 
+# ==================== GENERACIÓN DE ENTRADA COMO IMAGEN ====================
+
+def generar_firma_hmac(datos: str) -> str:
+    """Genera una firma HMAC-SHA256 para verificar autenticidad del QR"""
+    signature = hmac.new(HMAC_SECRET_KEY, datos.encode(), hashlib.sha256).hexdigest()
+    return signature[:16]  # Primeros 16 caracteres
+
+def verificar_firma_hmac(datos: str, firma: str) -> bool:
+    """Verifica que la firma HMAC sea válida"""
+    firma_esperada = generar_firma_hmac(datos)
+    return hmac.compare_digest(firma_esperada, firma)
+
+def generar_qr_seguro_v2(entrada_id: str, evento_id: str, codigo_alfanumerico: str) -> tuple:
+    """
+    Genera un QR ultra-seguro con:
+    - Código único encriptado
+    - Firma HMAC para verificación
+    - Timestamp de creación
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    # Datos del QR
+    datos_qr = {
+        "e": entrada_id,  # entrada_id (abreviado)
+        "v": evento_id,   # evento_id (abreviado)
+        "c": codigo_alfanumerico,
+        "t": timestamp[:19],  # timestamp sin microsegundos
+        "n": str(uuid.uuid4())[:8]  # nonce único
+    }
+    
+    # Crear string para firmar
+    datos_string = f"{entrada_id}|{evento_id}|{codigo_alfanumerico}|{datos_qr['n']}"
+    firma = generar_firma_hmac(datos_string)
+    datos_qr["s"] = firma  # signature
+    
+    # Encriptar datos
+    datos_json = json.dumps(datos_qr, separators=(',', ':'))
+    iv = os.urandom(16)
+    cipher = Cipher(
+        algorithms.AES(ENCRYPTION_KEY[:32]),
+        modes.CFB(iv),
+        backend=default_backend()
+    )
+    encryptor = cipher.encryptor()
+    datos_encriptados = encryptor.update(datos_json.encode()) + encryptor.finalize()
+    payload = base64.b64encode(iv + datos_encriptados).decode()
+    
+    # Generar imagen QR con alta corrección de errores
+    qr = qrcode.QRCode(
+        version=2,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,  # Máxima corrección
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(payload)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+    
+    return f"data:image/png;base64,{qr_base64}", payload
+
+async def generar_imagen_entrada(entrada: dict, evento: dict) -> bytes:
+    """
+    Genera una imagen de entrada completa con:
+    - Fondo personalizado (template) o predeterminado
+    - QR posicionado según configuración
+    - Información del evento y comprador
+    """
+    # Dimensiones de la entrada
+    ancho = 600
+    alto = 900
+    
+    # Crear imagen base
+    if evento.get('template_entrada'):
+        try:
+            # Cargar template personalizado
+            template_url = evento['template_entrada']
+            if template_url.startswith('data:image'):
+                # Es base64
+                img_data = base64.b64decode(template_url.split(',')[1])
+                img = Image.open(BytesIO(img_data))
+            elif template_url.startswith('/api/uploads/'):
+                # Es archivo local
+                filename = template_url.replace('/api/uploads/', '')
+                file_path = UPLOADS_DIR / filename
+                if file_path.exists():
+                    img = Image.open(file_path)
+                else:
+                    img = Image.new('RGB', (ancho, alto), color='#1a1a2e')
+            else:
+                img = Image.new('RGB', (ancho, alto), color='#1a1a2e')
+            
+            img = img.resize((ancho, alto), Image.Resampling.LANCZOS)
+        except Exception as e:
+            logging.error(f"Error cargando template: {e}")
+            img = Image.new('RGB', (ancho, alto), color='#1a1a2e')
+    else:
+        # Crear fondo predeterminado con gradiente
+        img = Image.new('RGB', (ancho, alto), color='#1a1a2e')
+        draw = ImageDraw.Draw(img)
+        
+        # Agregar patrón decorativo
+        for i in range(0, alto, 50):
+            opacity = int(20 + (i / alto) * 30)
+            draw.line([(0, i), (ancho, i)], fill=(250, 204, 21, opacity), width=1)
+    
+    draw = ImageDraw.Draw(img)
+    
+    # Intentar cargar fuente o usar predeterminada
+    try:
+        font_grande = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+        font_medio = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+        font_pequeno = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+    except:
+        font_grande = ImageFont.load_default()
+        font_medio = ImageFont.load_default()
+        font_pequeno = ImageFont.load_default()
+    
+    # Posición del QR desde configuración
+    posicion_qr = evento.get('posicion_qr', {'x': 50, 'y': 50, 'size': 150})
+    qr_x = int((posicion_qr.get('x', 50) / 100) * ancho)
+    qr_y = int((posicion_qr.get('y', 50) / 100) * alto)
+    qr_size = posicion_qr.get('size', 150)
+    
+    # Decodificar y pegar QR
+    if entrada.get('codigo_qr'):
+        try:
+            qr_data = entrada['codigo_qr'].split(',')[1]
+            qr_img = Image.open(BytesIO(base64.b64decode(qr_data)))
+            qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.LANCZOS)
+            
+            # Posicionar QR (centrado en las coordenadas)
+            paste_x = qr_x - qr_size // 2
+            paste_y = qr_y - qr_size // 2
+            
+            # Asegurar que esté dentro de los límites
+            paste_x = max(10, min(ancho - qr_size - 10, paste_x))
+            paste_y = max(10, min(alto - qr_size - 10, paste_y))
+            
+            # Crear fondo blanco para el QR
+            qr_bg = Image.new('RGB', (qr_size + 20, qr_size + 20), 'white')
+            img.paste(qr_bg, (paste_x - 10, paste_y - 10))
+            img.paste(qr_img, (paste_x, paste_y))
+        except Exception as e:
+            logging.error(f"Error procesando QR: {e}")
+    
+    # Agregar información en panel inferior
+    panel_height = 150
+    panel_y = alto - panel_height
+    
+    # Panel semi-transparente
+    overlay = Image.new('RGBA', (ancho, panel_height), (0, 0, 0, 180))
+    img.paste(Image.alpha_composite(
+        Image.new('RGBA', (ancho, panel_height), (0, 0, 0, 0)),
+        overlay
+    ).convert('RGB'), (0, panel_y))
+    
+    # Redibujar sobre el panel
+    draw = ImageDraw.Draw(img)
+    
+    # Nombre del evento
+    draw.text((30, panel_y + 20), evento.get('nombre', 'Evento')[:40], 
+              fill='#FACC15', font=font_grande)
+    
+    # Nombre del comprador
+    draw.text((30, panel_y + 55), f"👤 {entrada.get('nombre_comprador', 'N/A')}", 
+              fill='white', font=font_medio)
+    
+    # Asiento/Mesa si aplica
+    asiento_info = ""
+    if entrada.get('asiento'):
+        asiento_info = f"🪑 {entrada['asiento']}"
+    elif entrada.get('categoria_asiento'):
+        asiento_info = f"🎫 {entrada['categoria_asiento']}"
+    
+    if asiento_info:
+        draw.text((30, panel_y + 80), asiento_info, fill='white', font=font_medio)
+    
+    # Fecha y hora
+    draw.text((30, panel_y + 110), 
+              f"📅 {evento.get('fecha', '')} - {evento.get('hora', '')}", 
+              fill='#9CA3AF', font=font_pequeno)
+    
+    # Código alfanumérico
+    codigo = entrada.get('codigo_alfanumerico', entrada.get('id', '')[:12])
+    draw.text((ancho - 200, panel_y + 110), f"#{codigo}", 
+              fill='#FACC15', font=font_pequeno)
+    
+    # Convertir a bytes
+    buffer = BytesIO()
+    img.save(buffer, format='PNG', quality=95)
+    buffer.seek(0)
+    
+    return buffer.getvalue()
+
+@api_router.get("/entrada/{entrada_id}/imagen")
+async def obtener_imagen_entrada(entrada_id: str):
+    """Genera y retorna la imagen de una entrada"""
+    from fastapi.responses import Response
+    
+    entrada = await db.entradas.find_one({"id": entrada_id}, {"_id": 0})
+    if not entrada:
+        raise HTTPException(status_code=404, detail="Entrada no encontrada")
+    
+    if entrada.get('estado_pago') != 'aprobado':
+        raise HTTPException(status_code=403, detail="Entrada no aprobada aún")
+    
+    evento = await db.eventos.find_one({"id": entrada['evento_id']}, {"_id": 0})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    
+    imagen_bytes = await generar_imagen_entrada(entrada, evento)
+    
+    return Response(
+        content=imagen_bytes,
+        media_type="image/png",
+        headers={
+            "Content-Disposition": f"attachment; filename=entrada-{entrada_id[:8]}.png"
+        }
+    )
+
+# ==================== ENVÍO DE EMAIL ====================
+
+async def enviar_email_entrada(email_destino: str, entrada: dict, evento: dict) -> bool:
+    """
+    Envía la entrada por email con la imagen adjunta
+    """
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD:
+        logging.warning("Credenciales de Gmail no configuradas")
+        return False
+    
+    try:
+        # Generar imagen de entrada
+        imagen_bytes = await generar_imagen_entrada(entrada, evento)
+        
+        # Crear mensaje
+        msg = MIMEMultipart('mixed')
+        msg['From'] = GMAIL_USER
+        msg['To'] = email_destino
+        msg['Subject'] = f"🎪 Tu entrada para {evento.get('nombre', 'el evento')} - Ciudad Feria 2026"
+        
+        # Cuerpo del email en HTML
+        codigo = entrada.get('codigo_alfanumerico', entrada.get('id', '')[:12])
+        asiento_info = ""
+        if entrada.get('asiento'):
+            asiento_info = f"<p><strong>Asiento:</strong> {entrada['asiento']}</p>"
+        elif entrada.get('categoria_asiento'):
+            asiento_info = f"<p><strong>Categoría:</strong> {entrada['categoria_asiento']}</p>"
+        
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; background-color: #1a1a2e; color: white; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background: #2a2a4e; border-radius: 15px; padding: 30px;">
+                <h1 style="color: #FACC15; text-align: center;">🎪 Ciudad Feria 2026</h1>
+                <h2 style="color: white; text-align: center;">¡Tu entrada está lista!</h2>
+                
+                <div style="background: #3a3a6e; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                    <h3 style="color: #FACC15; margin-top: 0;">{evento.get('nombre', 'Evento')}</h3>
+                    <p><strong>Fecha:</strong> {evento.get('fecha', '')} - {evento.get('hora', '')}</p>
+                    <p><strong>Ubicación:</strong> {evento.get('ubicacion', '')}</p>
+                    <p><strong>Comprador:</strong> {entrada.get('nombre_comprador', '')}</p>
+                    {asiento_info}
+                    <p style="color: #FACC15;"><strong>Código:</strong> #{codigo}</p>
+                </div>
+                
+                <p style="text-align: center; color: #9CA3AF;">
+                    Tu entrada está adjunta a este correo como imagen.<br>
+                    Puedes descargarla y guardarla en tu teléfono.
+                </p>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #4a4a8e;">
+                    <p style="color: #6B7280; font-size: 12px;">
+                        Feria de San Sebastián 2026 - Táchira, Venezuela<br>
+                        Copyright Anthonnyfilms
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html_body, 'html'))
+        
+        # Adjuntar imagen de entrada
+        attachment = MIMEBase('image', 'png')
+        attachment.set_payload(imagen_bytes)
+        encoders.encode_base64(attachment)
+        attachment.add_header(
+            'Content-Disposition',
+            f'attachment; filename="entrada-{codigo}.png"'
+        )
+        msg.attach(attachment)
+        
+        # Enviar email
+        def send_sync():
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+                server.send_message(msg)
+        
+        await asyncio.to_thread(send_sync)
+        
+        logging.info(f"Email enviado exitosamente a {email_destino}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Error enviando email: {e}")
+        return False
+
+@api_router.post("/admin/aprobar-y-enviar")
+async def aprobar_y_enviar_entrada(
+    datos: AprobarCompra, 
+    background_tasks: BackgroundTasks,
+    current_user: str = Depends(get_current_user)
+):
+    """
+    Aprueba las compras y envía las entradas por email automáticamente
+    """
+    # Aprobar entradas
+    result = await db.entradas.update_many(
+        {"id": {"$in": datos.entrada_ids}},
+        {"$set": {"estado_pago": "aprobado"}}
+    )
+    
+    # Obtener entradas aprobadas para enviar emails
+    entradas = await db.entradas.find(
+        {"id": {"$in": datos.entrada_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    emails_enviados = 0
+    emails_fallidos = 0
+    
+    for entrada in entradas:
+        evento = await db.eventos.find_one({"id": entrada['evento_id']}, {"_id": 0})
+        if evento and entrada.get('email_comprador'):
+            # Enviar en background para no bloquear
+            email_enviado = await enviar_email_entrada(
+                entrada['email_comprador'],
+                entrada,
+                evento
+            )
+            if email_enviado:
+                emails_enviados += 1
+                # Marcar como enviado
+                await db.entradas.update_one(
+                    {"id": entrada['id']},
+                    {"$set": {"email_enviado": True, "fecha_email": datetime.now(timezone.utc).isoformat()}}
+                )
+            else:
+                emails_fallidos += 1
+    
+    return {
+        "message": f"{result.modified_count} entrada(s) aprobada(s)",
+        "aprobadas": result.modified_count,
+        "emails_enviados": emails_enviados,
+        "emails_fallidos": emails_fallidos,
+        "email_configurado": bool(GMAIL_USER and GMAIL_APP_PASSWORD)
+    }
+
+@api_router.post("/admin/reenviar-entrada/{entrada_id}")
+async def reenviar_entrada_email(entrada_id: str, current_user: str = Depends(get_current_user)):
+    """
+    Reenvía una entrada específica por email
+    """
+    entrada = await db.entradas.find_one({"id": entrada_id}, {"_id": 0})
+    if not entrada:
+        raise HTTPException(status_code=404, detail="Entrada no encontrada")
+    
+    if entrada.get('estado_pago') != 'aprobado':
+        raise HTTPException(status_code=400, detail="La entrada debe estar aprobada primero")
+    
+    evento = await db.eventos.find_one({"id": entrada['evento_id']}, {"_id": 0})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    
+    email_enviado = await enviar_email_entrada(
+        entrada['email_comprador'],
+        entrada,
+        evento
+    )
+    
+    if email_enviado:
+        await db.entradas.update_one(
+            {"id": entrada_id},
+            {"$set": {"email_enviado": True, "fecha_email": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"success": True, "message": f"Email reenviado a {entrada['email_comprador']}"}
+    else:
+        raise HTTPException(status_code=500, detail="Error al enviar email. Verifica la configuración de Gmail.")
+
+@api_router.get("/admin/email-config")
+async def obtener_config_email(current_user: str = Depends(get_current_user)):
+    """Verifica si el email está configurado"""
+    return {
+        "configurado": bool(GMAIL_USER and GMAIL_APP_PASSWORD),
+        "email": GMAIL_USER[:3] + "***" if GMAIL_USER else None
+    }
+
 app.include_router(api_router)
 
 app.add_middleware(
