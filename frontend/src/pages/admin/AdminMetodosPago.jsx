@@ -333,7 +333,53 @@ const AdminMetodosPago = () => {
               </div>
 
               <div>
-                <label className="block text-foreground/80 mb-2 font-medium">Icono (URL)</label>
+                <label className="block text-foreground/80 mb-2 font-medium">
+                  📷 Imagen del Método de Pago
+                </label>
+                <div className="space-y-3">
+                  {formData.imagen && (
+                    <div className="relative inline-block">
+                      <img 
+                        src={formData.imagen} 
+                        alt="Preview" 
+                        className="w-full max-w-xs h-32 object-contain rounded-xl bg-white/5 p-2"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({...formData, imagen: ''})}
+                        className="absolute -top-2 -right-2 bg-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                  <label className="block cursor-pointer">
+                    <div className={`border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:border-primary/50 transition-all ${uploadingImage ? 'opacity-50' : ''}`}>
+                      {uploadingImage ? (
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto"></div>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 mx-auto mb-2 text-foreground/50" />
+                          <p className="text-foreground/70 text-sm">
+                            {formData.imagen ? 'Cambiar imagen' : 'Subir imagen (logo del banco, QR, etc.)'}
+                          </p>
+                          <p className="text-xs text-foreground/50 mt-1">PNG, JPG (Máx. 5MB)</p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={uploadingImage}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-foreground/80 mb-2 font-medium">Icono (URL) - Opcional</label>
                 <input
                   type="url"
                   value={formData.icono}
