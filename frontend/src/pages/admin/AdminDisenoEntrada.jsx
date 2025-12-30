@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
-import { LayoutDashboard, Calendar, Settings, LogOut, Tag, ShoppingCart, CreditCard, Shield, Table2, Upload, Move, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { LayoutDashboard, Calendar, Settings, LogOut, Tag, ShoppingCart, CreditCard, Shield, Table2, Upload, Move, ZoomIn, ZoomOut, RotateCw, Save, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from '../../components/ui/sonner';
 
@@ -11,7 +11,7 @@ const API = `${BACKEND_URL}/api`;
 
 const AdminDisenoEntrada = () => {
   const navigate = useNavigate();
-  const canvasRef = useRef(null);
+  const previewRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState('');
@@ -23,8 +23,8 @@ const AdminDisenoEntrada = () => {
     size: 150,
     rotation: 0
   });
-  const [dragging, setDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     cargarEventos();
@@ -56,6 +56,10 @@ const AdminDisenoEntrada = () => {
     if (evento) {
       if (evento.template_entrada) {
         setFondoPreview(evento.template_entrada);
+        setFondoImagen(evento.template_entrada);
+      } else {
+        setFondoPreview(null);
+        setFondoImagen(null);
       }
       if (evento.posicion_qr) {
         setQrConfig({
@@ -64,6 +68,8 @@ const AdminDisenoEntrada = () => {
           size: evento.posicion_qr.size || 150,
           rotation: evento.posicion_qr.rotation || 0
         });
+      } else {
+        setQrConfig({ x: 50, y: 50, size: 150, rotation: 0 });
       }
     }
   };
@@ -95,25 +101,73 @@ const AdminDisenoEntrada = () => {
     }
   };
 
+  // Drag & Drop mejorado para el QR
   const handleMouseDown = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setDragging(true);
-    setDragStart({
-      x: e.clientX - rect.left - qrConfig.x,
-      y: e.clientY - rect.top - qrConfig.y
+    if (!previewRef.current) return;
+    e.preventDefault();
+    
+    const rect = previewRef.current.getBoundingClientRect();
+    const qrCurrentX = (qrConfig.x / 100) * rect.width;
+    const qrCurrentY = (qrConfig.y / 100) * rect.height;
+    
+    setDragOffset({
+      x: e.clientX - rect.left - qrCurrentX,
+      y: e.clientY - rect.top - qrCurrentY
     });
+    setIsDragging(true);
   };
 
   const handleMouseMove = (e) => {
-    if (!dragging) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const newX = Math.max(0, Math.min(100, ((e.clientX - rect.left - dragStart.x) / rect.width) * 100));
-    const newY = Math.max(0, Math.min(100, ((e.clientY - rect.top - dragStart.y) / rect.height) * 100));
-    setQrConfig(prev => ({ ...prev, x: newX, y: newY }));
+    if (!isDragging || !previewRef.current) return;
+    
+    const rect = previewRef.current.getBoundingClientRect();
+    const newX = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+    const newY = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+    
+    setQrConfig(prev => ({
+      ...prev,
+      x: Math.max(5, Math.min(95, newX)),
+      y: Math.max(5, Math.min(95, newY))
+    }));
   };
 
   const handleMouseUp = () => {
-    setDragging(false);
+    setIsDragging(false);
+  };
+
+  // Touch support for mobile
+  const handleTouchStart = (e) => {
+    if (!previewRef.current) return;
+    const touch = e.touches[0];
+    
+    const rect = previewRef.current.getBoundingClientRect();
+    const qrCurrentX = (qrConfig.x / 100) * rect.width;
+    const qrCurrentY = (qrConfig.y / 100) * rect.height;
+    
+    setDragOffset({
+      x: touch.clientX - rect.left - qrCurrentX,
+      y: touch.clientY - rect.top - qrCurrentY
+    });
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || !previewRef.current) return;
+    const touch = e.touches[0];
+    
+    const rect = previewRef.current.getBoundingClientRect();
+    const newX = ((touch.clientX - rect.left - dragOffset.x) / rect.width) * 100;
+    const newY = ((touch.clientY - rect.top - dragOffset.y) / rect.height) * 100;
+    
+    setQrConfig(prev => ({
+      ...prev,
+      x: Math.max(5, Math.min(95, newX)),
+      y: Math.max(5, Math.min(95, newY))
+    }));
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
   };
 
   const guardarConfiguracion = async () => {
@@ -133,7 +187,7 @@ const AdminDisenoEntrada = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Configuración guardada');
+      toast.success('✅ Configuración de entrada guardada');
     } catch (error) {
       console.error('Error guardando:', error);
       toast.error('Error al guardar configuración');
@@ -158,6 +212,8 @@ const AdminDisenoEntrada = () => {
     { icon: Upload, label: 'Diseño Entrada', path: '/admin/diseno-entrada', active: true },
     { icon: Settings, label: 'Configuración', path: '/admin/configuracion' },
   ];
+
+  const eventoActual = eventos.find(e => e.id === eventoSeleccionado);
 
   return (
     <div className="min-h-screen bg-background">
@@ -202,10 +258,10 @@ const AdminDisenoEntrada = () => {
         <main className="flex-1 p-8">
           <div className="mb-8">
             <h2 className="text-4xl font-heading font-black text-foreground">
-              Diseño de Entrada QR
+              🎫 Diseñador de Entrada
             </h2>
             <p className="text-foreground/60 mt-2">
-              Personaliza el diseño de las entradas y la posición del código QR
+              Personaliza el diseño de las entradas. Sube tu flyer y posiciona el código QR donde quieras.
             </p>
           </div>
 
@@ -215,7 +271,7 @@ const AdminDisenoEntrada = () => {
               {/* Selector de Evento */}
               <div className="glass-card p-6 rounded-2xl">
                 <label className="block text-foreground/80 mb-2 font-medium">
-                  Evento
+                  📅 Evento
                 </label>
                 <select
                   value={eventoSeleccionado}
@@ -231,13 +287,22 @@ const AdminDisenoEntrada = () => {
               {/* Upload de Fondo */}
               <div className="glass-card p-6 rounded-2xl">
                 <label className="block text-foreground/80 mb-4 font-medium">
-                  Imagen de Fondo (Flyer de la Entrada)
+                  🖼️ Fondo de la Entrada (Tu diseño/flyer)
                 </label>
                 <label className="block cursor-pointer">
                   <div className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-primary/50 transition-all">
-                    <Upload className="w-10 h-10 mx-auto mb-3 text-foreground/50" />
-                    <p className="text-foreground/70">Haz clic para subir imagen</p>
-                    <p className="text-xs text-foreground/50 mt-1">PNG, JPG (Recomendado: 600x900px)</p>
+                    {fondoPreview ? (
+                      <div className="space-y-3">
+                        <img src={fondoPreview} alt="Vista previa" className="max-h-32 mx-auto rounded-lg" />
+                        <p className="text-primary text-sm">✓ Imagen cargada - Clic para cambiar</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-10 h-10 mx-auto mb-3 text-foreground/50" />
+                        <p className="text-foreground/70">Haz clic para subir tu diseño</p>
+                        <p className="text-xs text-foreground/50 mt-1">PNG, JPG (Recomendado: 600x900px)</p>
+                      </>
+                    )}
                   </div>
                   <input
                     type="file"
@@ -252,45 +317,58 @@ const AdminDisenoEntrada = () => {
               <div className="glass-card p-6 rounded-2xl">
                 <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
                   <Move className="w-5 h-5 text-primary" />
-                  Posición del QR
+                  Posición y Tamaño del QR
                 </h3>
+                
+                <p className="text-foreground/60 text-sm mb-4">
+                  💡 Tip: Puedes arrastrar el QR directamente en la vista previa
+                </p>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-foreground/70">Posición X: {qrConfig.x.toFixed(0)}%</label>
+                    <label className="text-sm text-foreground/70 flex items-center justify-between">
+                      <span>Posición Horizontal (X)</span>
+                      <span className="text-primary font-mono">{qrConfig.x.toFixed(0)}%</span>
+                    </label>
                     <input
                       type="range"
-                      min="0"
-                      max="100"
+                      min="5"
+                      max="95"
                       value={qrConfig.x}
                       onChange={(e) => setQrConfig(prev => ({ ...prev, x: parseFloat(e.target.value) }))}
-                      className="w-full"
+                      className="w-full accent-primary"
                     />
                   </div>
                   
                   <div>
-                    <label className="text-sm text-foreground/70">Posición Y: {qrConfig.y.toFixed(0)}%</label>
+                    <label className="text-sm text-foreground/70 flex items-center justify-between">
+                      <span>Posición Vertical (Y)</span>
+                      <span className="text-primary font-mono">{qrConfig.y.toFixed(0)}%</span>
+                    </label>
                     <input
                       type="range"
-                      min="0"
-                      max="100"
+                      min="5"
+                      max="95"
                       value={qrConfig.y}
                       onChange={(e) => setQrConfig(prev => ({ ...prev, y: parseFloat(e.target.value) }))}
-                      className="w-full"
+                      className="w-full accent-primary"
                     />
                   </div>
                   
                   <div>
-                    <label className="text-sm text-foreground/70 flex items-center gap-2">
-                      <ZoomIn className="w-4 h-4" /> Tamaño: {qrConfig.size}px
+                    <label className="text-sm text-foreground/70 flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <ZoomIn className="w-4 h-4" /> Tamaño del QR
+                      </span>
+                      <span className="text-primary font-mono">{qrConfig.size}px</span>
                     </label>
                     <input
                       type="range"
                       min="80"
-                      max="300"
+                      max="250"
                       value={qrConfig.size}
                       onChange={(e) => setQrConfig(prev => ({ ...prev, size: parseInt(e.target.value) }))}
-                      className="w-full"
+                      className="w-full accent-primary"
                     />
                   </div>
                 </div>
@@ -302,72 +380,100 @@ const AdminDisenoEntrada = () => {
                 disabled={loading}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full bg-primary text-primary-foreground py-4 rounded-full font-bold text-lg disabled:opacity-50"
+                className="w-full bg-primary text-primary-foreground py-4 rounded-full font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading ? 'Guardando...' : 'Guardar Configuración'}
+                {loading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                ) : (
+                  <Save className="w-5 h-5" />
+                )}
+                {loading ? 'Guardando...' : 'Guardar Diseño'}
               </motion.button>
             </div>
 
-            {/* Vista Previa */}
+            {/* Vista Previa Interactiva */}
             <div className="glass-card p-6 rounded-2xl">
-              <h3 className="font-bold text-foreground mb-4">Vista Previa de la Entrada</h3>
+              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
+                <Eye className="w-5 h-5 text-primary" />
+                Vista Previa de la Entrada
+              </h3>
               
               <div 
-                className="relative bg-gray-800 rounded-xl overflow-hidden mx-auto"
+                ref={previewRef}
+                className={`relative bg-gray-800 rounded-xl overflow-hidden mx-auto select-none ${isDragging ? 'cursor-grabbing' : ''}`}
                 style={{ width: '300px', height: '450px' }}
-                onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               >
                 {/* Fondo */}
                 {fondoPreview ? (
                   <img 
                     src={fondoPreview} 
                     alt="Fondo entrada" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover pointer-events-none"
+                    draggable={false}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
                     <div className="text-center">
                       <span className="text-6xl">🎪</span>
                       <p className="text-foreground/50 mt-4">Feria San Sebastián 2026</p>
+                      <p className="text-foreground/30 text-sm mt-2">Sube tu diseño arriba</p>
                     </div>
                   </div>
                 )}
                 
-                {/* QR Simulado */}
+                {/* QR Arrastrable */}
                 <div 
-                  className="absolute bg-white p-2 rounded-lg shadow-lg cursor-move"
+                  className={`absolute bg-white p-2 rounded-lg shadow-xl transition-shadow ${isDragging ? 'shadow-2xl ring-2 ring-primary cursor-grabbing' : 'cursor-grab hover:ring-2 hover:ring-primary/50'}`}
                   style={{
                     left: `${qrConfig.x}%`,
                     top: `${qrConfig.y}%`,
-                    transform: `translate(-50%, -50%) rotate(${qrConfig.rotation}deg)`,
+                    transform: `translate(-50%, -50%)`,
                     width: `${qrConfig.size * 0.5}px`,
                     height: `${qrConfig.size * 0.5}px`
                   }}
+                  onMouseDown={handleMouseDown}
+                  onTouchStart={handleTouchStart}
                 >
-                  <div className="w-full h-full bg-gray-900 rounded grid grid-cols-5 grid-rows-5 gap-0.5 p-1">
-                    {Array.from({ length: 25 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={`${Math.random() > 0.5 ? 'bg-black' : 'bg-white'}`}
-                      />
-                    ))}
+                  {/* QR simulado */}
+                  <div className="w-full h-full bg-white rounded grid grid-cols-7 grid-rows-7 gap-px p-1">
+                    {Array.from({ length: 49 }).map((_, i) => {
+                      // Patrón más realista de QR
+                      const row = Math.floor(i / 7);
+                      const col = i % 7;
+                      const isCorner = (row < 2 && col < 2) || (row < 2 && col > 4) || (row > 4 && col < 2);
+                      const isBlack = isCorner || (Math.random() > 0.5);
+                      return (
+                        <div 
+                          key={i} 
+                          className={`${isBlack ? 'bg-black' : 'bg-white'}`}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Info de ejemplo */}
-                <div className="absolute bottom-4 left-4 right-4 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-white text-xs">
-                  <p className="font-bold">Gran Concierto de la Feria</p>
-                  <p className="text-white/70">Silla 5 - Mesa VIP 1</p>
-                  <p className="text-white/70">20/01/2026 - 20:00</p>
+                {/* Info de ejemplo en panel inferior */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm p-3 text-white text-xs">
+                  <p className="font-bold text-primary truncate">{eventoActual?.nombre || 'Nombre del Evento'}</p>
+                  <p className="text-white/70">👤 Nombre del Comprador</p>
+                  <p className="text-white/70">🪑 Mesa VIP - Silla 5</p>
+                  <p className="text-white/50 text-[10px] mt-1">📅 {eventoActual?.fecha || '2026-01-20'} - {eventoActual?.hora || '20:00'}</p>
                 </div>
               </div>
               
-              <p className="text-center text-xs text-foreground/50 mt-4">
-                Arrastra el QR para ajustar su posición
-              </p>
+              <div className="mt-4 p-3 bg-primary/10 rounded-xl text-center">
+                <p className="text-sm text-foreground/70">
+                  🖱️ Arrastra el código QR para posicionarlo
+                </p>
+                <p className="text-xs text-foreground/50 mt-1">
+                  La entrada final incluirá el QR real con los datos del comprador
+                </p>
+              </div>
             </div>
           </div>
         </main>
