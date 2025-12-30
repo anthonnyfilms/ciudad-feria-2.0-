@@ -1,9 +1,9 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, status, UploadFile, File
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, status, UploadFile, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
@@ -22,6 +22,14 @@ import logging
 import jwt
 from passlib.context import CryptContext
 import shutil
+from PIL import Image, ImageDraw, ImageFont
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+import asyncio
+import hmac
 
 ROOT_DIR = Path(__file__).parent
 UPLOADS_DIR = ROOT_DIR / "uploads"
