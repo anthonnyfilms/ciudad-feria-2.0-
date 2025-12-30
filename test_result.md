@@ -439,8 +439,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Ticket Designer with drag-drop QR positioning"
-    - "Admin Compras - Aprobar y Enviar Email"
+    - "Admin Métodos de Pago - Image upload field"
+    - "Admin Configuration - Editable home description"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
