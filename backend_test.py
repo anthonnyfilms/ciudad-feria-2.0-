@@ -883,7 +883,16 @@ def main():
         else:
             print("❌ Seat selection system has issues")
         
-        # Test 10: TICKET IMAGE & EMAIL SYSTEM (NEW)
+        # Test 10: QR VALIDATION E2E FLOW (REQUESTED BY USER)
+        print("\n🔍 Testing QR Validation E2E Flow...")
+        qr_validation_success = tester.test_qr_validation_flow_e2e(admin_token)
+        
+        if qr_validation_success:
+            print("✅ QR validation E2E flow fully functional!")
+        else:
+            print("❌ QR validation E2E flow has issues")
+        
+        # Test 11: TICKET IMAGE & EMAIL SYSTEM (NEW)
         print("\n🎫 Testing Ticket Image & Email System...")
         ticket_system_success = tester.test_ticket_email_system_complete(admin_token)
         
