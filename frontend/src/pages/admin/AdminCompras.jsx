@@ -212,6 +212,24 @@ const AdminCompras = () => {
               Gestión de Compras
             </h2>
 
+            {/* Banner de configuración de email */}
+            {!emailConfigured && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-accent/10 border border-accent/30 rounded-xl p-4 mb-6 flex items-center gap-3"
+              >
+                <Mail className="w-5 h-5 text-accent flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-foreground font-medium">Email no configurado</p>
+                  <p className="text-foreground/60 text-sm">
+                    Configura las credenciales de Gmail en el backend para enviar entradas automáticamente.
+                    Agrega GMAIL_USER y GMAIL_APP_PASSWORD en /app/backend/.env
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             <div className="flex gap-4 mb-6">
               <select
                 value={eventoFiltro}
