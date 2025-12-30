@@ -409,8 +409,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Generación de imagen de entrada"
-    - "Aprobar y enviar email endpoint"
     - "Ticket Designer with drag-drop QR positioning"
     - "Admin Compras - Aprobar y Enviar Email"
   stuck_tasks: []
