@@ -47,7 +47,13 @@ const MisEntradas = () => {
     link.href = entrada.codigo_qr;
     link.download = `entrada-${entrada.nombre_evento}-${entrada.id}.png`;
     link.click();
-    toast.success('Entrada descargada');
+    toast.success('QR descargado');
+  };
+
+  const descargarEntradaCompleta = (entradaId) => {
+    // Descargar imagen completa de la entrada
+    window.open(`${API}/entrada/${entradaId}/imagen`, '_blank');
+    toast.success('Descargando entrada completa...');
   };
 
   return (
