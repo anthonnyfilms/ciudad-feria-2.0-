@@ -498,51 +498,180 @@ const SelectorAsientos = ({ eventoId, precioBase = 0, onSeleccionChange, maxSele
                           className="border-t border-white/10"
                         >
                           <div className="p-4">
+                            {/* Mostrar mensaje de venta completa si aplica */}
+                            {mesa.ventaCompleta && (
+                              <div className="bg-amber-500/20 border border-amber-500/30 rounded-xl p-3 mb-4 text-center">
+                                <p className="text-amber-400 font-medium text-sm">
+                                  🎯 Esta mesa solo se vende completa ({numSillas} sillas)
+                                </p>
+                                <p className="text-foreground/60 text-xs mt-1">
+                                  Precio total: ${(mesa.precio || precioBase) * numSillas}
+                                </p>
+                              </div>
+                            )}
+                            
                             <p className="text-sm text-foreground/60 mb-4 flex items-center gap-2">
                               <MousePointerClick className="w-4 h-4" />
-                              Haz clic en las sillas que deseas reservar
+                              {mesa.ventaCompleta 
+                                ? 'Haz clic en cualquier silla para seleccionar la mesa completa'
+                                : 'Haz clic en las sillas que deseas reservar'
+                              }
                             </p>
                             
-                            {/* Grid de sillas */}
-                            <div className="flex flex-wrap gap-2 justify-center">
-                              {Array.from({ length: numSillas }).map((_, idx) => {
-                                const sillaNum = idx + 1;
-                                const asientoId = `${mesaNombre}-Silla${sillaNum}`;
-                                const estado = getEstadoAsiento(asientoId);
+                            {/* Mesa en forma de U */}
+                            <div className="relative py-8">
+                              {/* Parte frontal libre (escenario) */}
+                              <div className="text-center mb-2">
+                                <span className="text-xs text-foreground/40 uppercase tracking-wider">↑ Frente</span>
+                              </div>
+                              
+                              {/* Contenedor de la mesa en U */}
+                              <div className="flex flex-col items-center gap-2">
+                                {/* Sillas de arriba (3 sillas: 1, 2, 3) */}
+                                <div className="flex gap-2 justify-center">
+                                  {[1, 2, 3].filter(n => n <= numSillas).map((sillaNum) => {
+                                    const asientoId = `${mesaNombre}-Silla${sillaNum}`;
+                                    const estado = getEstadoAsiento(asientoId);
+                                    const seleccionarTodas = mesa.ventaCompleta && estado === 'disponible';
 
-                                return (
-                                  <motion.button
-                                    key={sillaNum}
-                                    type="button"
-                                    disabled={estado === 'ocupado' || estado === 'pendiente'}
-                                    onClick={() => toggleAsiento(asientoId, mesa.precio || precioBase)}
-                                    whileHover={{ scale: estado === 'disponible' ? 1.1 : 1 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className={`w-12 h-12 rounded-lg transition-all duration-200 flex flex-col items-center justify-center text-white ${getColorAsiento(estado, categoriaColor)}`}
-                                    style={{
-                                      backgroundColor: estado === 'disponible' ? categoriaColor : undefined
+                                    return (
+                                      <motion.button
+                                        key={sillaNum}
+                                        type="button"
+                                        disabled={estado === 'ocupado' || estado === 'pendiente'}
+                                        onClick={() => mesa.ventaCompleta 
+                                          ? toggleMesaCompleta(mesa, mesaNombre, numSillas)
+                                          : toggleAsiento(asientoId, mesa.precio || precioBase)
+                                        }
+                                        whileHover={{ scale: estado === 'disponible' ? 1.1 : 1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className={`w-10 h-10 rounded-lg transition-all duration-200 flex flex-col items-center justify-center text-white text-xs font-bold ${getColorAsiento(estado, categoriaColor)}`}
+                                        style={{
+                                          backgroundColor: estado === 'disponible' ? categoriaColor : undefined
+                                        }}
+                                        title={`Silla ${sillaNum} - $${mesa.precio || precioBase}`}
+                                      >
+                                        {estado === 'seleccionado' ? <Check className="w-4 h-4" /> : estado === 'ocupado' ? <X className="w-4 h-4" /> : sillaNum}
+                                      </motion.button>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Fila del medio con mesa */}
+                                <div className="flex items-center gap-2">
+                                  {/* Sillas izquierda (4, 5) */}
+                                  <div className="flex flex-col gap-2">
+                                    {[4, 5].filter(n => n <= numSillas).map((sillaNum) => {
+                                      const asientoId = `${mesaNombre}-Silla${sillaNum}`;
+                                      const estado = getEstadoAsiento(asientoId);
+
+                                      return (
+                                        <motion.button
+                                          key={sillaNum}
+                                          type="button"
+                                          disabled={estado === 'ocupado' || estado === 'pendiente'}
+                                          onClick={() => mesa.ventaCompleta 
+                                            ? toggleMesaCompleta(mesa, mesaNombre, numSillas)
+                                            : toggleAsiento(asientoId, mesa.precio || precioBase)
+                                          }
+                                          whileHover={{ scale: estado === 'disponible' ? 1.1 : 1 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          className={`w-10 h-10 rounded-lg transition-all duration-200 flex flex-col items-center justify-center text-white text-xs font-bold ${getColorAsiento(estado, categoriaColor)}`}
+                                          style={{
+                                            backgroundColor: estado === 'disponible' ? categoriaColor : undefined
+                                          }}
+                                          title={`Silla ${sillaNum} - $${mesa.precio || precioBase}`}
+                                        >
+                                          {estado === 'seleccionado' ? <Check className="w-4 h-4" /> : estado === 'ocupado' ? <X className="w-4 h-4" /> : sillaNum}
+                                        </motion.button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Mesa central */}
+                                  <div 
+                                    className="w-24 h-16 rounded-lg flex items-center justify-center border-2 border-dashed"
+                                    style={{ 
+                                      borderColor: categoriaColor + '60',
+                                      backgroundColor: categoriaColor + '10'
                                     }}
-                                    title={`Silla ${sillaNum} - $${mesa.precio || precioBase}`}
                                   >
-                                    {estado === 'seleccionado' ? (
-                                      <Check className="w-5 h-5" />
-                                    ) : estado === 'ocupado' ? (
-                                      <X className="w-5 h-5" />
-                                    ) : (
-                                      <>
-                                        <span className="text-sm font-bold">{sillaNum}</span>
-                                      </>
-                                    )}
-                                  </motion.button>
-                                );
-                              })}
+                                    <span className="text-xs font-bold" style={{ color: categoriaColor }}>
+                                      {mesaNombre.replace('Mesa ', 'M')}
+                                    </span>
+                                  </div>
+
+                                  {/* Sillas derecha (6, 7) */}
+                                  <div className="flex flex-col gap-2">
+                                    {[6, 7].filter(n => n <= numSillas).map((sillaNum) => {
+                                      const asientoId = `${mesaNombre}-Silla${sillaNum}`;
+                                      const estado = getEstadoAsiento(asientoId);
+
+                                      return (
+                                        <motion.button
+                                          key={sillaNum}
+                                          type="button"
+                                          disabled={estado === 'ocupado' || estado === 'pendiente'}
+                                          onClick={() => mesa.ventaCompleta 
+                                            ? toggleMesaCompleta(mesa, mesaNombre, numSillas)
+                                            : toggleAsiento(asientoId, mesa.precio || precioBase)
+                                          }
+                                          whileHover={{ scale: estado === 'disponible' ? 1.1 : 1 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          className={`w-10 h-10 rounded-lg transition-all duration-200 flex flex-col items-center justify-center text-white text-xs font-bold ${getColorAsiento(estado, categoriaColor)}`}
+                                          style={{
+                                            backgroundColor: estado === 'disponible' ? categoriaColor : undefined
+                                          }}
+                                          title={`Silla ${sillaNum} - $${mesa.precio || precioBase}`}
+                                        >
+                                          {estado === 'seleccionado' ? <Check className="w-4 h-4" /> : estado === 'ocupado' ? <X className="w-4 h-4" /> : sillaNum}
+                                        </motion.button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Sillas de abajo (8, 9, 10) */}
+                                <div className="flex gap-2 justify-center">
+                                  {[8, 9, 10].filter(n => n <= numSillas).map((sillaNum) => {
+                                    const asientoId = `${mesaNombre}-Silla${sillaNum}`;
+                                    const estado = getEstadoAsiento(asientoId);
+
+                                    return (
+                                      <motion.button
+                                        key={sillaNum}
+                                        type="button"
+                                        disabled={estado === 'ocupado' || estado === 'pendiente'}
+                                        onClick={() => mesa.ventaCompleta 
+                                          ? toggleMesaCompleta(mesa, mesaNombre, numSillas)
+                                          : toggleAsiento(asientoId, mesa.precio || precioBase)
+                                        }
+                                        whileHover={{ scale: estado === 'disponible' ? 1.1 : 1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className={`w-10 h-10 rounded-lg transition-all duration-200 flex flex-col items-center justify-center text-white text-xs font-bold ${getColorAsiento(estado, categoriaColor)}`}
+                                        style={{
+                                          backgroundColor: estado === 'disponible' ? categoriaColor : undefined
+                                        }}
+                                        title={`Silla ${sillaNum} - $${mesa.precio || precioBase}`}
+                                      >
+                                        {estado === 'seleccionado' ? <Check className="w-4 h-4" /> : estado === 'ocupado' ? <X className="w-4 h-4" /> : sillaNum}
+                                      </motion.button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
                             </div>
 
                             {/* Info de precio en la mesa expandida */}
                             <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
-                              <span className="text-foreground/60 text-sm">Precio por silla:</span>
+                              <span className="text-foreground/60 text-sm">
+                                {mesa.ventaCompleta ? 'Precio mesa completa:' : 'Precio por silla:'}
+                              </span>
                               <span className="font-bold text-lg" style={{ color: categoriaColor }}>
-                                ${mesa.precio || precioBase}
+                                ${mesa.ventaCompleta 
+                                  ? ((mesa.precio || precioBase) * numSillas).toFixed(2)
+                                  : (mesa.precio || precioBase)
+                                }
                               </span>
                             </div>
                           </div>
