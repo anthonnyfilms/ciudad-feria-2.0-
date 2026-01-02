@@ -146,11 +146,13 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
 
   const calcularCapacidadTotal = () => {
     if (tipoAsientos === 'general') {
-      return capacidadGeneral;
+      return categoriasGenerales.reduce((acc, cat) => acc + (cat.capacidad || 0), 0);
     } else if (tipoAsientos === 'mesas') {
       return mesas.reduce((acc, mesa) => acc + mesa.sillas, 0);
     } else if (tipoAsientos === 'mixto') {
-      return mesas.reduce((acc, mesa) => acc + mesa.sillas, 0) + entradasGeneralesMixto;
+      const capacidadMesas = mesas.reduce((acc, mesa) => acc + mesa.sillas, 0);
+      const capacidadGenerales = categoriasGenerales.reduce((acc, cat) => acc + (cat.capacidad || 0), 0);
+      return capacidadMesas + capacidadGenerales;
     }
     return 0;
   };
