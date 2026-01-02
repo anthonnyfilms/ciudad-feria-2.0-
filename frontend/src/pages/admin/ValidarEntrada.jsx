@@ -188,11 +188,23 @@ const ValidarEntrada = () => {
       return;
     }
     
+    const codigo = codigoManual.trim().toUpperCase();
+    
     try {
-      const response = await axios.post(`${API}/validar-entrada-codigo`, {
-        codigo: codigoManual.trim().toUpperCase(),
-        accion: modoEscaneo
-      });
+      let response;
+      
+      // Si empieza con AC- es acreditación, si no es entrada
+      if (codigo.startsWith('AC-')) {
+        response = await axios.post(`${API}/validar-acreditacion`, {
+          codigo: codigo,
+          accion: modoEscaneo
+        });
+      } else {
+        response = await axios.post(`${API}/validar-entrada-codigo`, {
+          codigo: codigo,
+          accion: modoEscaneo
+        });
+      }
 
       setResultado(response.data);
 
