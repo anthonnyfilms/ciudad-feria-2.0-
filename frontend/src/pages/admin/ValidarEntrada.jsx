@@ -170,6 +170,41 @@ const ValidarEntrada = () => {
     }
   };
 
+  const validarCodigoManual = async () => {
+    if (!codigoManual.trim()) {
+      toast.error('Ingresa un código');
+      return;
+    }
+    
+    try {
+      const response = await axios.post(`${API}/validar-entrada-codigo`, {
+        codigo: codigoManual.trim().toUpperCase(),
+        accion: modoEscaneo
+      });
+
+      setResultado(response.data);
+
+      if (response.data.valido) {
+        toast.success(response.data.mensaje);
+        playSound(true);
+        setCodigoManual('');
+      } else {
+        toast.error(response.data.mensaje);
+        playSound(false);
+      }
+    } catch (error) {
+      console.error('Error validando código:', error);
+      const mensajeError = error.response?.data?.detail || 'Código no encontrado';
+      setResultado({
+        valido: false,
+        mensaje: mensajeError,
+        entrada: null
+      });
+      toast.error(mensajeError);
+      playSound(false);
+    }
+  };
+
   const playSound = (success) => {
     if (typeof window !== 'undefined' && window.AudioContext) {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
