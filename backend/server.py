@@ -332,7 +332,28 @@ async def obtener_evento(evento_id: str):
     if isinstance(evento.get('fecha_creacion'), str):
         evento['fecha_creacion'] = datetime.fromisoformat(evento['fecha_creacion'])
     
-    # Calcular entradas disponibles reales
+    # Calcular capacidad real basada en configuración de asientos
+    config_asientos = evento.get('configuracion_asientos', {})
+    tipo_asientos = evento.get('tipo_asientos', 'general')
+    
+    capacidad_total = 0
+    if tipo_asientos == 'mesas' or tipo_asientos == 'mixto':
+        # Sumar sillas de todas las mesas
+        mesas = config_asientos.get('mesas', [])
+        for mesa in mesas:
+            capacidad_total += mesa.get('sillas', 10)
+    
+    if tipo_asientos == 'general' or tipo_asientos == 'mixto':
+        # Sumar capacidad de categorías generales
+        categorias_generales = config_asientos.get('categorias_generales', [])
+        for cat in categorias_generales:
+            capacidad_total += cat.get('capacidad', 0)
+    
+    # Si no hay configuración, usar el valor guardado
+    if capacidad_total == 0:
+        capacidad_total = evento.get('asientos_disponibles', 100)
+    
+    # Calcular entradas vendidas/pendientes
     entradas = await db.entradas.find({
         "evento_id": evento_id,
         "estado_pago": {"$in": ["aprobado", "pendiente"]}
@@ -340,8 +361,8 @@ async def obtener_evento(evento_id: str):
     
     entradas_vendidas = len([e for e in entradas if e.get('estado_pago') == 'aprobado'])
     entradas_pendientes = len([e for e in entradas if e.get('estado_pago') == 'pendiente'])
-    capacidad_total = evento.get('asientos_disponibles', 0)
     
+    evento['capacidad_total'] = capacidad_total
     evento['entradas_disponibles'] = capacidad_total - entradas_vendidas - entradas_pendientes
     evento['entradas_vendidas'] = entradas_vendidas
     evento['entradas_pendientes'] = entradas_pendientes
