@@ -562,7 +562,7 @@ class CiudadFeriaAPITester:
         print(f"   🎫 Ticket ID: {entrada_id}")
         print(f"   👤 Buyer: {compra_data['nombre_comprador']}")
         print(f"   📧 Email: {compra_data['email_comprador']}")
-        print(f"   🪑 Seat: {compra_data.get('asientos_seleccionados', ['General'])[0]}")
+        print(f"   🪑 Seat: {compra_data.get('asientos', ['General'])[0]}")
         
         # Step 3: Admin login
         print(f"\n3️⃣ Admin login...")
