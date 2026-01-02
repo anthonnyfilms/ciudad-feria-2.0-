@@ -143,10 +143,22 @@ const ValidarEntrada = () => {
 
   const validarQR = async (qrPayload) => {
     try {
-      const response = await axios.post(`${API}/validar-entrada`, {
+      // Primero intentar validar como entrada
+      let response = await axios.post(`${API}/validar-entrada`, {
         qr_payload: qrPayload,
         accion: modoEscaneo
       });
+
+      // Si no es válido, intentar como acreditación
+      if (!response.data.valido) {
+        const acredResponse = await axios.post(`${API}/validar-acreditacion`, {
+          qr_payload: qrPayload,
+          accion: modoEscaneo
+        });
+        if (acredResponse.data.valido) {
+          response = acredResponse;
+        }
+      }
 
       setResultado(response.data);
 
@@ -158,7 +170,7 @@ const ValidarEntrada = () => {
         playSound(false);
       }
     } catch (error) {
-      console.error('Error validando entrada:', error);
+      console.error('Error validando:', error);
       const mensajeError = error.response?.data?.detail || 'Error al validar';
       setResultado({
         valido: false,
