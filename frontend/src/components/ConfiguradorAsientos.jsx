@@ -616,6 +616,7 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
                   <div className="col-span-4">
                     <input
                       type="text"
+                      data-testid="mixto-zona-nombre"
                       value={nuevaCategoriaGeneral.nombre}
                       onChange={(e) => setNuevaCategoriaGeneral({...nuevaCategoriaGeneral, nombre: e.target.value})}
                       className="w-full bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
@@ -625,6 +626,7 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
                   <div className="col-span-2">
                     <input
                       type="number"
+                      data-testid="mixto-zona-precio"
                       value={nuevaCategoriaGeneral.precio}
                       onChange={(e) => setNuevaCategoriaGeneral({...nuevaCategoriaGeneral, precio: parseFloat(e.target.value) || 0})}
                       min="0"
@@ -635,6 +637,7 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
                   <div className="col-span-2">
                     <input
                       type="number"
+                      data-testid="mixto-zona-capacidad"
                       value={nuevaCategoriaGeneral.capacidad}
                       onChange={(e) => setNuevaCategoriaGeneral({...nuevaCategoriaGeneral, capacidad: parseInt(e.target.value) || 0})}
                       min="1"
@@ -645,6 +648,7 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
                   <div className="col-span-2">
                     <input
                       type="color"
+                      data-testid="mixto-zona-color"
                       value={nuevaCategoriaGeneral.color}
                       onChange={(e) => setNuevaCategoriaGeneral({...nuevaCategoriaGeneral, color: e.target.value})}
                       className="w-full h-9 rounded-lg cursor-pointer border border-white/10"
@@ -653,6 +657,7 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
                   <div className="col-span-2">
                     <button
                       type="button"
+                      data-testid="mixto-agregar-zona-btn"
                       onClick={agregarCategoriaGeneral}
                       disabled={!nuevaCategoriaGeneral.nombre.trim()}
                       className="w-full py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-1"
