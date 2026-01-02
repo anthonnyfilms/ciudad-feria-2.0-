@@ -324,7 +324,12 @@ const SelectorAsientos = ({ eventoId, precioBase = 0, onSeleccionChange, maxSele
         )}
 
         <div className="text-center text-foreground/50 text-sm">
-          Disponibles: {datosAsientos.disponibles} de {datosAsientos.capacidad_total}
+          Disponibles: {Math.max(0, datosAsientos.disponibles - Object.values(seleccionPorCategoria).reduce((a, b) => a + b, 0))} de {datosAsientos.capacidad_total}
+          {Object.values(seleccionPorCategoria).reduce((a, b) => a + b, 0) > 0 && (
+            <span className="text-primary ml-2">
+              (seleccionadas: {Object.values(seleccionPorCategoria).reduce((a, b) => a + b, 0)})
+            </span>
+          )}
         </div>
       </motion.div>
     );
