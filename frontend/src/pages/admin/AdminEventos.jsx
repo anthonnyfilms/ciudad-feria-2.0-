@@ -546,7 +546,8 @@ const AdminEventos = () => {
                     tipo: formData.tipo_asientos,
                     capacidad: formData.asientos_disponibles,
                     mesas: formData.configuracion_asientos?.mesas || [],
-                    entradas_generales: formData.configuracion_asientos?.entradas_generales || 0
+                    entradas_generales: formData.configuracion_asientos?.entradas_generales || 0,
+                    categorias_generales: formData.configuracion_asientos?.categorias_generales || []
                   }}
                   onConfiguracionChange={handleConfiguracionAsientos}
                 />
