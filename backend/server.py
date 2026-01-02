@@ -1389,9 +1389,9 @@ async def generar_imagen_entrada(entrada: dict, evento: dict) -> bytes:
     - QR posicionado según configuración
     - Información del evento y comprador
     """
-    # Dimensiones de la entrada
-    ancho = 600
-    alto = 900
+    # Dimensiones de la entrada (1080x1080 como solicitado)
+    ancho = 1080
+    alto = 1080
     
     # Crear imagen base
     if evento.get('template_entrada'):
