@@ -681,6 +681,77 @@ const SelectorAsientos = ({ eventoId, precioBase = 0, onSeleccionChange, maxSele
         );
       })}
 
+      {/* Sección de Entradas Generales para eventos MIXTOS */}
+      {datosAsientos?.tipo_asientos === 'mixto' && configuracion.categorias_generales && configuracion.categorias_generales.length > 0 && (
+        <div className="mt-8 pt-8 border-t border-white/10">
+          <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <Ticket className="w-6 h-6 text-primary" />
+            Entradas Generales (sin mesa asignada)
+          </h3>
+          
+          <div className="space-y-4">
+            {configuracion.categorias_generales.map((cat, idx) => {
+              const cantidadSeleccionada = seleccionPorCategoria[cat.nombre] || 0;
+              
+              return (
+                <div key={idx} className="glass-card p-6 rounded-2xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: (cat.color || '#10B981') + '20' }}
+                    >
+                      <Users className="w-5 h-5" style={{ color: cat.color || '#10B981' }} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-foreground">{cat.nombre}</h3>
+                      <p className="text-sm text-foreground/60">Sin asiento asignado • {cat.capacidad} disponibles</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-primary">${cat.precio || precioBase}</p>
+                      <p className="text-xs text-foreground/50">por entrada</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-foreground/70">Cantidad:</span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => actualizarCantidadCategoria(cat.nombre, -1, cat.precio || precioBase)}
+                        className="w-10 h-10 rounded-full glass-card flex items-center justify-center text-xl font-bold hover:border-primary transition-colors"
+                        disabled={cantidadSeleccionada <= 0}
+                      >
+                        -
+                      </button>
+                      <span className="text-2xl font-bold text-primary w-12 text-center">
+                        {cantidadSeleccionada}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => actualizarCantidadCategoria(cat.nombre, 1, cat.precio || precioBase)}
+                        className="w-10 h-10 rounded-full glass-card flex items-center justify-center text-xl font-bold hover:border-primary transition-colors"
+                        disabled={cantidadSeleccionada >= (cat.capacidad || 10)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {cantidadSeleccionada > 0 && (
+                    <div className="mt-3 pt-3 border-t border-white/10 flex justify-between">
+                      <span className="text-foreground/70">Subtotal:</span>
+                      <span className="font-bold text-primary">
+                        ${((cat.precio || precioBase) * cantidadSeleccionada).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Mensaje si no hay mesas expandidas y no hay selección */}
       {asientosSeleccionados.length === 0 && !mesaExpandida && (
         <div className="text-center py-6">
