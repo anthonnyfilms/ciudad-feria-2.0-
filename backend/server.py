@@ -1867,6 +1867,408 @@ async def obtener_config_email(current_user: str = Depends(get_current_user)):
         "email": GMAIL_USER[:3] + "***" if GMAIL_USER else None
     }
 
+# ==================== SISTEMA DE ACREDITACIONES ====================
+
+@api_router.get("/admin/categorias-acreditacion")
+async def listar_categorias_acreditacion(current_user: str = Depends(get_current_user)):
+    """Lista todas las categorías de acreditación"""
+    categorias = await db.categorias_acreditacion.find({}, {"_id": 0}).to_list(100)
+    return categorias
+
+@api_router.post("/admin/categorias-acreditacion")
+async def crear_categoria_acreditacion(request: Request, current_user: str = Depends(get_current_user)):
+    """Crea una nueva categoría de acreditación"""
+    body = await request.json()
+    categoria = CategoriaAcreditacion(**body)
+    await db.categorias_acreditacion.insert_one(categoria.model_dump())
+    return {"success": True, "categoria": categoria.model_dump()}
+
+@api_router.put("/admin/categorias-acreditacion/{categoria_id}")
+async def actualizar_categoria_acreditacion(categoria_id: str, request: Request, current_user: str = Depends(get_current_user)):
+    """Actualiza una categoría de acreditación"""
+    body = await request.json()
+    await db.categorias_acreditacion.update_one(
+        {"id": categoria_id},
+        {"$set": body}
+    )
+    return {"success": True}
+
+@api_router.delete("/admin/categorias-acreditacion/{categoria_id}")
+async def eliminar_categoria_acreditacion(categoria_id: str, current_user: str = Depends(get_current_user)):
+    """Elimina una categoría de acreditación"""
+    await db.categorias_acreditacion.delete_one({"id": categoria_id})
+    return {"success": True}
+
+@api_router.get("/admin/acreditaciones")
+async def listar_acreditaciones(evento_id: Optional[str] = None, current_user: str = Depends(get_current_user)):
+    """Lista todas las acreditaciones, opcionalmente filtradas por evento"""
+    filtro = {}
+    if evento_id:
+        filtro["evento_id"] = evento_id
+    acreditaciones = await db.acreditaciones.find(filtro, {"_id": 0}).to_list(1000)
+    return acreditaciones
+
+@api_router.post("/admin/acreditaciones")
+async def crear_acreditacion(request: Request, current_user: str = Depends(get_current_user)):
+    """Crea una nueva acreditación con QR"""
+    body = await request.json()
+    
+    # Generar código alfanumérico único
+    codigo_unico = str(uuid.uuid4())[:8].upper()
+    codigo_alfanumerico = f"AC-{body.get('categoria_nombre', 'GEN')[:3].upper()}-{codigo_unico}"
+    
+    # Crear acreditación
+    acreditacion_data = {
+        "id": str(uuid.uuid4()),
+        "evento_id": body.get("evento_id"),
+        "categoria_id": body.get("categoria_id"),
+        "categoria_nombre": body.get("categoria_nombre"),
+        "nombre_persona": body.get("nombre_persona"),
+        "organizacion": body.get("organizacion"),
+        "cargo": body.get("cargo"),
+        "email": body.get("email"),
+        "telefono": body.get("telefono"),
+        "foto": body.get("foto"),
+        "zonas_acceso": body.get("zonas_acceso", []),
+        "codigo_alfanumerico": codigo_alfanumerico,
+        "fecha_creacion": datetime.now(timezone.utc).isoformat(),
+        "estado": "activa",
+        "estado_entrada": "fuera",
+        "historial_acceso": []
+    }
+    
+    # Generar QR
+    datos_qr = {
+        "tipo": "acreditacion",
+        "acreditacion_id": acreditacion_data["id"],
+        "codigo": codigo_alfanumerico,
+        "categoria": acreditacion_data["categoria_nombre"],
+        "nombre": acreditacion_data["nombre_persona"],
+        "zonas": acreditacion_data["zonas_acceso"]
+    }
+    
+    qr_image, qr_payload = generar_qr_seguro(datos_qr)
+    acreditacion_data["codigo_qr"] = qr_image
+    acreditacion_data["qr_payload"] = qr_payload
+    
+    await db.acreditaciones.insert_one(acreditacion_data)
+    
+    return {"success": True, "acreditacion": acreditacion_data}
+
+@api_router.delete("/admin/acreditaciones/{acreditacion_id}")
+async def eliminar_acreditacion(acreditacion_id: str, current_user: str = Depends(get_current_user)):
+    """Elimina una acreditación"""
+    await db.acreditaciones.delete_one({"id": acreditacion_id})
+    return {"success": True}
+
+@api_router.post("/validar-acreditacion")
+async def validar_acreditacion(request: Request):
+    """Valida una acreditación por QR o código"""
+    body = await request.json()
+    qr_payload = body.get('qr_payload')
+    codigo = body.get('codigo', '').strip().upper()
+    accion = body.get('accion', 'verificar')
+    
+    acreditacion = None
+    
+    # Buscar por código o QR
+    if codigo:
+        acreditacion = await db.acreditaciones.find_one({
+            "codigo_alfanumerico": codigo,
+            "estado": "activa"
+        }, {"_id": 0})
+    elif qr_payload:
+        # Decodificar QR
+        datos = validar_qr(qr_payload)
+        if datos and datos.get('tipo') == 'acreditacion':
+            acreditacion = await db.acreditaciones.find_one({
+                "id": datos.get('acreditacion_id'),
+                "estado": "activa"
+            }, {"_id": 0})
+    
+    if not acreditacion:
+        return {
+            "valido": False,
+            "tipo": "acreditacion",
+            "mensaje": "❌ Acreditación no encontrada o inactiva"
+        }
+    
+    if accion == 'verificar':
+        return {
+            "valido": True,
+            "tipo": "acreditacion",
+            "mensaje": "✅ Acreditación válida",
+            "acreditacion": {
+                "nombre_persona": acreditacion['nombre_persona'],
+                "categoria": acreditacion['categoria_nombre'],
+                "organizacion": acreditacion.get('organizacion'),
+                "cargo": acreditacion.get('cargo'),
+                "zonas_acceso": acreditacion.get('zonas_acceso', []),
+                "estado_actual": acreditacion.get('estado_entrada', 'fuera')
+            }
+        }
+    
+    elif accion == 'entrada':
+        if acreditacion.get('estado_entrada') == 'dentro':
+            return {
+                "valido": False,
+                "tipo": "acreditacion",
+                "mensaje": "🚨 Esta persona ya está dentro",
+                "acreditacion": {
+                    "nombre_persona": acreditacion['nombre_persona'],
+                    "categoria": acreditacion['categoria_nombre']
+                }
+            }
+        
+        historial = acreditacion.get('historial_acceso', [])
+        historial.append({
+            "tipo": "entrada",
+            "fecha": datetime.now(timezone.utc).isoformat()
+        })
+        
+        await db.acreditaciones.update_one(
+            {"id": acreditacion['id']},
+            {"$set": {"estado_entrada": "dentro", "historial_acceso": historial}}
+        )
+        
+        return {
+            "valido": True,
+            "tipo": "acreditacion",
+            "mensaje": f"✅ Entrada - {acreditacion['nombre_persona']} ({acreditacion['categoria_nombre']})",
+            "acreditacion": {
+                "nombre_persona": acreditacion['nombre_persona'],
+                "categoria": acreditacion['categoria_nombre'],
+                "zonas_acceso": acreditacion.get('zonas_acceso', [])
+            }
+        }
+    
+    elif accion == 'salida':
+        if acreditacion.get('estado_entrada') != 'dentro':
+            return {
+                "valido": False,
+                "tipo": "acreditacion",
+                "mensaje": "Esta persona no está registrada dentro"
+            }
+        
+        historial = acreditacion.get('historial_acceso', [])
+        historial.append({
+            "tipo": "salida",
+            "fecha": datetime.now(timezone.utc).isoformat()
+        })
+        
+        await db.acreditaciones.update_one(
+            {"id": acreditacion['id']},
+            {"$set": {"estado_entrada": "fuera", "historial_acceso": historial}}
+        )
+        
+        return {
+            "valido": True,
+            "tipo": "acreditacion",
+            "mensaje": "✅ Salida registrada",
+            "acreditacion": {
+                "nombre_persona": acreditacion['nombre_persona'],
+                "categoria": acreditacion['categoria_nombre']
+            }
+        }
+
+# ==================== AFORO EN TIEMPO REAL ====================
+
+@api_router.get("/admin/aforo/{evento_id}")
+async def obtener_aforo_evento(evento_id: str, current_user: str = Depends(get_current_user)):
+    """Obtiene el aforo en tiempo real de un evento"""
+    
+    # Obtener evento
+    evento = await db.eventos.find_one({"id": evento_id}, {"_id": 0})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    
+    # Contar entradas por categoría
+    entradas = await db.entradas.find({
+        "evento_id": evento_id,
+        "estado_pago": "aprobado"
+    }, {"_id": 0}).to_list(10000)
+    
+    # Contar acreditaciones
+    acreditaciones = await db.acreditaciones.find({
+        "evento_id": evento_id,
+        "estado": "activa"
+    }, {"_id": 0}).to_list(1000)
+    
+    # Calcular aforo
+    aforo = {
+        "evento": evento.get('nombre'),
+        "total_entradas": len(entradas),
+        "entradas_dentro": len([e for e in entradas if e.get('estado_entrada') == 'dentro']),
+        "entradas_fuera": len([e for e in entradas if e.get('estado_entrada') != 'dentro']),
+        "total_acreditaciones": len(acreditaciones),
+        "acreditaciones_dentro": len([a for a in acreditaciones if a.get('estado_entrada') == 'dentro']),
+        "acreditaciones_fuera": len([a for a in acreditaciones if a.get('estado_entrada') != 'dentro']),
+        "total_personas_dentro": 0,
+        "categorias_entradas": {},
+        "categorias_acreditaciones": {}
+    }
+    
+    # Desglose por categoría de entrada
+    for entrada in entradas:
+        cat = entrada.get('categoria_asiento') or entrada.get('categoria_entrada') or 'General'
+        if cat not in aforo["categorias_entradas"]:
+            aforo["categorias_entradas"][cat] = {"total": 0, "dentro": 0, "fuera": 0}
+        aforo["categorias_entradas"][cat]["total"] += 1
+        if entrada.get('estado_entrada') == 'dentro':
+            aforo["categorias_entradas"][cat]["dentro"] += 1
+        else:
+            aforo["categorias_entradas"][cat]["fuera"] += 1
+    
+    # Desglose por categoría de acreditación
+    for acred in acreditaciones:
+        cat = acred.get('categoria_nombre', 'Sin categoría')
+        if cat not in aforo["categorias_acreditaciones"]:
+            aforo["categorias_acreditaciones"][cat] = {"total": 0, "dentro": 0, "fuera": 0}
+        aforo["categorias_acreditaciones"][cat]["total"] += 1
+        if acred.get('estado_entrada') == 'dentro':
+            aforo["categorias_acreditaciones"][cat]["dentro"] += 1
+        else:
+            aforo["categorias_acreditaciones"][cat]["fuera"] += 1
+    
+    aforo["total_personas_dentro"] = aforo["entradas_dentro"] + aforo["acreditaciones_dentro"]
+    
+    return aforo
+
+# ==================== GENERADOR DE ENTRADAS PARA IMPRESORA TÉRMICA ====================
+
+@api_router.post("/admin/generar-entradas-termicas")
+async def generar_entradas_termicas(request: Request, current_user: str = Depends(get_current_user)):
+    """Genera entradas para impresora térmica 80mm"""
+    body = await request.json()
+    evento_id = body.get('evento_id')
+    categoria = body.get('categoria', 'General')
+    cantidad = body.get('cantidad', 1)
+    precio = body.get('precio', 0)
+    
+    evento = await db.eventos.find_one({"id": evento_id}, {"_id": 0})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    
+    entradas_generadas = []
+    
+    for i in range(cantidad):
+        # Generar código único
+        codigo_unico = str(uuid.uuid4())[:8].upper()
+        codigo_alfanumerico = f"CF-{categoria[:3].upper()}-{codigo_unico}"
+        
+        entrada_data = {
+            "id": str(uuid.uuid4()),
+            "evento_id": evento_id,
+            "nombre_evento": evento['nombre'],
+            "nombre_comprador": "Venta Taquilla",
+            "email_comprador": "",
+            "telefono_comprador": "",
+            "cantidad": 1,
+            "precio_unitario": precio,
+            "precio_total": precio,
+            "categoria_entrada": categoria,
+            "codigo_alfanumerico": codigo_alfanumerico,
+            "metodo_pago": "Efectivo Taquilla",
+            "estado_pago": "aprobado",
+            "fecha_compra": datetime.now(timezone.utc).isoformat(),
+            "estado_entrada": "fuera",
+            "historial_acceso": [],
+            "tipo_venta": "taquilla"
+        }
+        
+        # Generar QR
+        datos_qr = {
+            "tipo": "entrada",
+            "entrada_id": entrada_data["id"],
+            "codigo": codigo_alfanumerico,
+            "evento": evento['nombre'],
+            "categoria": categoria
+        }
+        
+        qr_image, qr_payload = generar_qr_seguro(datos_qr)
+        hash_validacion = generar_hash(datos_qr)
+        
+        entrada_data["codigo_qr"] = qr_image
+        entrada_data["qr_payload"] = qr_payload
+        entrada_data["hash_validacion"] = hash_validacion
+        
+        await db.entradas.insert_one(entrada_data)
+        entradas_generadas.append(entrada_data)
+    
+    return {
+        "success": True,
+        "cantidad": len(entradas_generadas),
+        "entradas": entradas_generadas
+    }
+
+@api_router.get("/admin/entrada-termica/{entrada_id}")
+async def obtener_entrada_termica(entrada_id: str, current_user: str = Depends(get_current_user)):
+    """Genera imagen de entrada para impresora térmica 80mm (576px ancho)"""
+    entrada = await db.entradas.find_one({"id": entrada_id}, {"_id": 0})
+    if not entrada:
+        raise HTTPException(status_code=404, detail="Entrada no encontrada")
+    
+    # Dimensiones para impresora térmica 80mm (aprox 576px a 203dpi)
+    ancho = 576
+    alto = 400
+    
+    # Crear imagen
+    img = Image.new('RGB', (ancho, alto), color='white')
+    draw = ImageDraw.Draw(img)
+    
+    try:
+        font_titulo = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        font_normal = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+        font_codigo = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
+    except:
+        font_titulo = ImageFont.load_default()
+        font_normal = ImageFont.load_default()
+        font_codigo = ImageFont.load_default()
+    
+    # Título del evento
+    evento_nombre = entrada.get('nombre_evento', 'EVENTO')[:30]
+    draw.text((ancho//2, 20), evento_nombre, font=font_titulo, fill='black', anchor='mt')
+    
+    # Línea separadora
+    draw.line([(20, 55), (ancho-20, 55)], fill='black', width=2)
+    
+    # Categoría
+    categoria = entrada.get('categoria_entrada', 'General')
+    draw.text((ancho//2, 70), categoria.upper(), font=font_normal, fill='black', anchor='mt')
+    
+    # QR Code (más grande, centrado)
+    if entrada.get('codigo_qr'):
+        try:
+            qr_data = entrada['codigo_qr'].split(',')[1]
+            qr_img = Image.open(BytesIO(base64.b64decode(qr_data)))
+            qr_size = 200
+            qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.LANCZOS)
+            qr_x = (ancho - qr_size) // 2
+            qr_y = 100
+            img.paste(qr_img, (qr_x, qr_y))
+        except Exception as e:
+            logging.error(f"Error procesando QR: {e}")
+    
+    # Código alfanumérico
+    codigo = entrada.get('codigo_alfanumerico', '')
+    draw.text((ancho//2, 320), codigo, font=font_codigo, fill='black', anchor='mt')
+    
+    # Precio
+    precio = entrada.get('precio_total', 0)
+    draw.text((ancho//2, 350), f"${precio:.2f}", font=font_titulo, fill='black', anchor='mt')
+    
+    # Línea separadora final
+    draw.line([(20, 380), (ancho-20, 380)], fill='black', width=1)
+    draw.text((ancho//2, 390), "Ciudad Feria 2026", font=font_codigo, fill='gray', anchor='mt')
+    
+    # Convertir a bytes
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    buffer.seek(0)
+    
+    from fastapi.responses import Response
+    return Response(content=buffer.getvalue(), media_type="image/png")
+
 app.include_router(api_router)
 
 app.add_middleware(
