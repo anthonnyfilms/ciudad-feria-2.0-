@@ -216,6 +216,37 @@ class MetodoPago(BaseModel):
     activo: bool = True
     orden: int = 0
 
+class CategoriaAcreditacion(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nombre: str
+    color: str = "#8B5CF6"
+    zonas_acceso: List[str] = []  # Zonas permitidas
+    capacidad: int = 100
+    descripcion: Optional[str] = None
+    activa: bool = True
+
+class Acreditacion(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    evento_id: str
+    categoria_id: str
+    categoria_nombre: str
+    nombre_persona: str
+    organizacion: Optional[str] = None
+    cargo: Optional[str] = None
+    email: Optional[str] = None
+    telefono: Optional[str] = None
+    foto: Optional[str] = None
+    codigo_qr: Optional[str] = None
+    qr_payload: Optional[str] = None
+    codigo_alfanumerico: str = ""
+    zonas_acceso: List[str] = []
+    fecha_creacion: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    estado: str = "activa"  # activa, usada, cancelada
+    estado_entrada: str = "fuera"  # fuera, dentro
+    historial_acceso: List[dict] = []
+
 # Auth Functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
