@@ -37,6 +37,21 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
     cargarCategoriasMesas();
   }, []);
 
+  // Actualizar estados cuando cambia configuracionInicial (para edición de eventos)
+  useEffect(() => {
+    if (configuracionInicial) {
+      if (configuracionInicial.tipo) {
+        setTipoAsientos(configuracionInicial.tipo);
+      }
+      if (configuracionInicial.mesas) {
+        setMesas(configuracionInicial.mesas);
+      }
+      if (configuracionInicial.categorias_generales && configuracionInicial.categorias_generales.length > 0) {
+        setCategoriasGenerales(configuracionInicial.categorias_generales);
+      }
+    }
+  }, [configuracionInicial]);
+
   const agregarCategoriaMesa = async () => {
     if (!nuevaCategoria.nombre.trim()) return;
     
