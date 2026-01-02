@@ -533,23 +533,146 @@ const ConfiguradorAsientos = ({ eventoId, configuracionInicial, onConfiguracionC
             </motion.div>
           )}
 
-          {/* Entradas generales (solo mixto) */}
+          {/* Zonas de entradas generales (solo mixto) */}
           {tipoAsientos === 'mixto' && (
             <div className="glass-card p-6 rounded-xl">
-              <label className="block text-sm font-medium text-foreground/70 mb-2">
-                Entradas Generales Adicionales
-              </label>
-              <input
-                type="number"
-                value={entradasGeneralesMixto}
-                onChange={(e) => setEntradasGeneralesMixto(parseInt(e.target.value) || 0)}
-                min="0"
-                className="w-full bg-background/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary"
-                placeholder="Ej: 100"
-              />
-              <p className="text-xs text-foreground/50 mt-2">
-                Entradas sin asiento asignado, adicionales a las mesas
-              </p>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="font-bold text-foreground">🎫 Zonas de Entrada General</h4>
+                  <p className="text-xs text-foreground/50">Entradas sin mesa asignada - El cliente elige zona y cantidad</p>
+                </div>
+              </div>
+              
+              {/* Lista de categorías/zonas generales */}
+              <div className="space-y-3 mb-4">
+                {categoriasGenerales.map((cat, index) => (
+                  <div key={cat.id || index} className="bg-background/50 border border-white/10 rounded-xl p-4">
+                    <div className="grid grid-cols-12 gap-3 items-center">
+                      <div className="col-span-4">
+                        <label className="text-xs text-foreground/50 block mb-1">Nombre de zona</label>
+                        <input
+                          type="text"
+                          value={cat.nombre}
+                          onChange={(e) => actualizarCategoriaGeneral(index, 'nombre', e.target.value)}
+                          className="w-full bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+                          placeholder="Ej: General, Gradas..."
+                        />
+                      </div>
+                      
+                      <div className="col-span-2">
+                        <label className="text-xs text-foreground/50 block mb-1">Precio</label>
+                        <input
+                          type="number"
+                          value={cat.precio}
+                          onChange={(e) => actualizarCategoriaGeneral(index, 'precio', parseFloat(e.target.value) || 0)}
+                          min="0"
+                          step="0.01"
+                          className="w-full bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+                          placeholder="$"
+                        />
+                      </div>
+                      
+                      <div className="col-span-2">
+                        <label className="text-xs text-foreground/50 block mb-1">Capacidad</label>
+                        <input
+                          type="number"
+                          value={cat.capacidad}
+                          onChange={(e) => actualizarCategoriaGeneral(index, 'capacidad', parseInt(e.target.value) || 0)}
+                          min="1"
+                          className="w-full bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      
+                      <div className="col-span-2">
+                        <label className="text-xs text-foreground/50 block mb-1">Color</label>
+                        <input
+                          type="color"
+                          value={cat.color || '#10B981'}
+                          onChange={(e) => actualizarCategoriaGeneral(index, 'color', e.target.value)}
+                          className="w-full h-9 rounded-lg cursor-pointer border border-white/10"
+                        />
+                      </div>
+                      
+                      <div className="col-span-2 flex justify-end">
+                        {categoriasGenerales.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => eliminarCategoriaGeneral(index)}
+                            className="p-2 rounded-lg hover:bg-accent/20 text-accent transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Agregar nueva zona */}
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                <p className="text-xs text-foreground/60 mb-3">➕ Agregar nueva zona</p>
+                <div className="grid grid-cols-12 gap-3 items-end">
+                  <div className="col-span-4">
+                    <input
+                      type="text"
+                      value={nuevaCategoriaGeneral.nombre}
+                      onChange={(e) => setNuevaCategoriaGeneral({...nuevaCategoriaGeneral, nombre: e.target.value})}
+                      className="w-full bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+                      placeholder="Nombre de la zona"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      value={nuevaCategoriaGeneral.precio}
+                      onChange={(e) => setNuevaCategoriaGeneral({...nuevaCategoriaGeneral, precio: parseFloat(e.target.value) || 0})}
+                      min="0"
+                      className="w-full bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+                      placeholder="Precio"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      value={nuevaCategoriaGeneral.capacidad}
+                      onChange={(e) => setNuevaCategoriaGeneral({...nuevaCategoriaGeneral, capacidad: parseInt(e.target.value) || 0})}
+                      min="1"
+                      className="w-full bg-background/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary"
+                      placeholder="Capacidad"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <input
+                      type="color"
+                      value={nuevaCategoriaGeneral.color}
+                      onChange={(e) => setNuevaCategoriaGeneral({...nuevaCategoriaGeneral, color: e.target.value})}
+                      className="w-full h-9 rounded-lg cursor-pointer border border-white/10"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={agregarCategoriaGeneral}
+                      disabled={!nuevaCategoriaGeneral.nombre.trim()}
+                      className="w-full py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Resumen capacidad entradas generales */}
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-foreground/60">Total entradas generales:</span>
+                  <span className="font-bold text-primary">
+                    {categoriasGenerales.reduce((sum, cat) => sum + (cat.capacidad || 0), 0)} entradas
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </motion.div>
