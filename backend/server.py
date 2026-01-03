@@ -238,6 +238,7 @@ class Acreditacion(BaseModel):
     categoria_id: str
     categoria_nombre: str
     nombre_persona: str
+    cedula: Optional[str] = None
     organizacion: Optional[str] = None
     cargo: Optional[str] = None
     email: Optional[str] = None
