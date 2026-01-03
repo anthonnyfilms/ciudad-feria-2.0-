@@ -2297,6 +2297,9 @@ async def generar_pdf_acreditacion(acreditacion_id: str, current_user: str = Dep
     if not acreditacion:
         raise HTTPException(status_code=404, detail="Acreditación no encontrada")
     
+    # Obtener evento
+    evento = await db.eventos.find_one({"id": acreditacion.get("evento_id")}, {"_id": 0})
+    
     # Obtener configuración de diseño de la categoría
     categoria = await db.categorias_acreditacion.find_one({"id": acreditacion.get("categoria_id")}, {"_id": 0})
     
@@ -2305,7 +2308,7 @@ async def generar_pdf_acreditacion(acreditacion_id: str, current_user: str = Dep
     c = canvas.Canvas(buffer, pagesize=(CREDENCIAL_WIDTH, CREDENCIAL_HEIGHT))
     
     # Dibujar la acreditación
-    await dibujar_acreditacion(c, acreditacion, categoria, 0, 0, CREDENCIAL_WIDTH, CREDENCIAL_HEIGHT)
+    await dibujar_acreditacion(c, acreditacion, categoria, 0, 0, CREDENCIAL_WIDTH, CREDENCIAL_HEIGHT, evento)
     
     c.save()
     buffer.seek(0)
