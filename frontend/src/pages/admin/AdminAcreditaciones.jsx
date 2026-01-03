@@ -193,13 +193,75 @@ const AdminAcreditaciones = () => {
     { icon: Tag, label: 'Categorías', path: '/admin/categorias' },
     { icon: ShoppingCart, label: 'Compras', path: '/admin/compras' },
     { icon: CreditCard, label: 'Métodos de Pago', path: '/admin/metodos-pago' },
-    { icon: BadgeCheck, label: 'Acreditaciones', path: '/admin/acreditaciones' },
+    { icon: BadgeCheck, label: 'Acreditaciones', path: '/admin/acreditaciones', active: true },
+    { icon: Palette, label: 'Diseño Acreditación', path: '/admin/diseno-acreditacion' },
     { icon: Shield, label: 'Validar Entradas', path: '/admin/validar' },
-    { icon: BarChart3, label: 'Aforo', path: '/admin/aforo' },
+    { icon: Activity, label: 'Aforo', path: '/admin/aforo' },
     { icon: Table2, label: 'Diseño Entrada', path: '/admin/diseno-entrada' },
     { icon: Users, label: 'Usuarios', path: '/admin/usuarios' },
     { icon: Settings, label: 'Configuración', path: '/admin/configuracion' },
   ];
+
+  // Funciones para descargar PDFs
+  const descargarPdfIndividual = async (acreditacionId, nombrePersona) => {
+    try {
+      setDownloadingPdf(true);
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.get(`${API}/admin/acreditaciones/${acreditacionId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `acreditacion_${nombrePersona.replace(/\s+/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF descargado');
+    } catch (error) {
+      console.error('Error descargando PDF:', error);
+      toast.error('Error al descargar PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const descargarTodosPdf = async () => {
+    if (!eventoSeleccionado) {
+      toast.error('Selecciona un evento');
+      return;
+    }
+    
+    try {
+      setDownloadingPdf(true);
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.get(`${API}/admin/acreditaciones/evento/${eventoSeleccionado}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const evento = eventos.find(e => e.id === eventoSeleccionado);
+      const nombreEvento = evento?.nombre?.replace(/\s+/g, '_') || 'evento';
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `acreditaciones_${nombreEvento}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF con todas las acreditaciones descargado');
+    } catch (error) {
+      console.error('Error descargando PDF:', error);
+      toast.error('Error al descargar PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
