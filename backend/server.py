@@ -116,6 +116,7 @@ class EventoUpdate(BaseModel):
     posicion_qr: Optional[dict] = None
     template_acreditacion: Optional[str] = None
     config_acreditacion: Optional[dict] = None
+    config_acreditaciones: Optional[dict] = None  # Diseños por categoría
     link_externo: Optional[str] = None
     asientos_disponibles: Optional[int] = None
     categorias_asientos: Optional[List[dict]] = None
