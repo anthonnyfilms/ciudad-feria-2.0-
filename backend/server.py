@@ -2350,18 +2350,17 @@ async def generar_pdf_todas_acreditaciones(evento_id: str, current_user: str = D
     rows = 2
     
     for i, acred in enumerate(acreditaciones):
-        # Calcular posición en la página
+        # Calcular posición en la página (1 columna x 2 filas)
         page_index = i // (cols * rows)
         pos_in_page = i % (cols * rows)
-        col = pos_in_page % cols
-        row = pos_in_page // cols
+        row = pos_in_page
         
         # Nueva página si es necesario
         if pos_in_page == 0 and i > 0:
             c.showPage()
         
-        # Calcular coordenadas
-        x = margin + col * (cred_width + spacing_x)
+        # Calcular coordenadas (centrado horizontalmente)
+        x = (page_width - cred_width) / 2
         y = page_height - margin - (row + 1) * (cred_height + spacing_y)
         
         # Obtener categoría
