@@ -142,6 +142,7 @@ const AdminAcreditaciones = () => {
       setShowModal(false);
       setNuevaAcreditacion({
         nombre_persona: '',
+        cedula: '',
         organizacion: '',
         cargo: '',
         email: '',
