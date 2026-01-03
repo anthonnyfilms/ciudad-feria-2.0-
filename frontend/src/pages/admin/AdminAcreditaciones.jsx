@@ -21,6 +21,7 @@ const AdminAcreditaciones = () => {
   
   const [nuevaAcreditacion, setNuevaAcreditacion] = useState({
     nombre_persona: '',
+    cedula: '',
     organizacion: '',
     cargo: '',
     email: '',
@@ -29,6 +30,8 @@ const AdminAcreditaciones = () => {
     categoria_nombre: '',
     zonas_acceso: []
   });
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const [nuevaCategoria, setNuevaCategoria] = useState({
     nombre: '',
