@@ -441,8 +441,17 @@ const AdminAcreditaciones = () => {
                         ))}
                       </div>
                       <button
+                        onClick={() => descargarPdfIndividual(acred.id, acred.nombre_persona)}
+                        disabled={downloadingPdf}
+                        className="text-blue-400 hover:bg-blue-500/20 p-2 rounded-lg disabled:opacity-50"
+                        title="Descargar PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => eliminarAcreditacion(acred.id)}
                         className="text-accent hover:bg-accent/20 p-2 rounded-lg"
+                        title="Eliminar"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -450,13 +459,8 @@ const AdminAcreditaciones = () => {
                   </div>
                 </motion.div>
               ))}
-              
-              {acreditaciones.length === 0 && (
-                <div className="text-center py-12 text-foreground/50">
-                  No hay acreditaciones para este evento
-                </div>
-              )}
             </div>
+            )}
           </div>
         </div>
       </main>
