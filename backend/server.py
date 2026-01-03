@@ -2425,34 +2425,34 @@ async def dibujar_acreditacion(c, acreditacion: dict, categoria: dict, x: float,
         except:
             pass  # Si falla, usar diseño por defecto
     
-    # Nombre de la categoría (arriba)
+    # Nombre de la categoría (arriba) - Fuente grande para credencial de 14.5 x 9.5 cm
     c.setFillColorRGB(1, 1, 1)
-    c.setFont("Helvetica-Bold", 14)
+    c.setFont("Helvetica-Bold", 22)
     categoria_nombre = categoria.get("nombre", "GENERAL") if categoria else "GENERAL"
-    c.drawCentredString(x + width/2, y + height - 8*mm, categoria_nombre.upper())
+    c.drawCentredString(x + width/2, y + height - 12*mm, categoria_nombre.upper())
     
-    # Nombre de la persona
-    c.setFont("Helvetica-Bold", 12)
+    # Nombre de la persona - Fuente grande
+    c.setFont("Helvetica-Bold", 20)
     nombre = acreditacion.get("nombre_persona", "SIN NOMBRE")
     # Ajustar posición según configuración o usar defecto
     if config and config.get("nombre", {}).get("visible", True):
         nombre_y = y + height * (1 - config["nombre"].get("y", 35) / 100)
     else:
-        nombre_y = y + height - 18*mm
+        nombre_y = y + height - 28*mm
     c.drawCentredString(x + width/2, nombre_y, nombre.upper())
     
-    # Cédula
-    c.setFont("Helvetica", 9)
+    # Cédula - Fuente mediana
+    c.setFont("Helvetica", 14)
     cedula = acreditacion.get("cedula", "")
     if config and config.get("cedula", {}).get("visible", True):
         cedula_y = y + height * (1 - config["cedula"].get("y", 45) / 100)
     else:
-        cedula_y = y + height - 24*mm
+        cedula_y = y + height - 38*mm
     if cedula:
         c.drawCentredString(x + width/2, cedula_y, f"C.I.: {cedula}")
     
-    # Departamento/Organización
-    c.setFont("Helvetica-Bold", 12)
+    # Departamento/Organización - Fuente mediana
+    c.setFont("Helvetica-Bold", 16)
     departamento = acreditacion.get("organizacion", "") or acreditacion.get("cargo", "")
     if config and config.get("departamento", {}).get("visible", True):
         dept_y = y + height * (1 - config["departamento"].get("y", 55) / 100)
