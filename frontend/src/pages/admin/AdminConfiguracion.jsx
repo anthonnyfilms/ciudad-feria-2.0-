@@ -209,6 +209,52 @@ const AdminConfiguracion = () => {
                   Imágenes y Videos
                 </h3>
                 <div className="space-y-6">
+                  {/* Imagen de Fondo Home - SUBIR ARCHIVO */}
+                  <div>
+                    <label className="block text-foreground/80 mb-2 font-medium">
+                      🖼️ Imagen de Fondo (Página Principal)
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex-1">
+                        <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors">
+                          <Upload className="w-10 h-10 text-foreground/40 mx-auto mb-2" />
+                          <p className="text-foreground/60 text-sm">
+                            {subiendoImagen ? 'Subiendo...' : (config.imagen_fondo_home ? 'Cambiar imagen' : 'Subir imagen de fondo')}
+                          </p>
+                          <p className="text-foreground/40 text-xs mt-1">PNG, JPG (Recomendado: 1920x1080px)</p>
+                        </div>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleSubirImagenFondo} 
+                          className="hidden" 
+                          disabled={subiendoImagen}
+                        />
+                      </label>
+                      {config.imagen_fondo_home && (
+                        <div className="w-32 h-32 rounded-xl overflow-hidden border border-white/20">
+                          <img 
+                            src={config.imagen_fondo_home} 
+                            alt="Fondo actual" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {config.imagen_fondo_home && (
+                      <button
+                        type="button"
+                        onClick={() => setConfig({...config, imagen_fondo_home: ''})}
+                        className="text-accent text-sm mt-2 hover:underline"
+                      >
+                        Quitar imagen de fondo
+                      </button>
+                    )}
+                    <p className="text-xs text-foreground/50 mt-2">
+                      Esta imagen se mostrará como fondo en la sección principal de la página de inicio
+                    </p>
+                  </div>
+                  
                   <div>
                     <label className="block text-foreground/80 mb-2 font-medium">
                       Banner Principal (URL)
