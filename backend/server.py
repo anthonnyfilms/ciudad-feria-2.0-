@@ -2335,19 +2335,19 @@ async def generar_pdf_todas_acreditaciones(evento_id: str, current_user: str = D
     categorias = await db.categorias_acreditacion.find({}, {"_id": 0}).to_list(100)
     categorias_dict = {cat["id"]: cat for cat in categorias}
     
-    # Crear PDF tamaño carta con credenciales grandes (14.5 x 9.5 cm)
+    # Crear PDF tamaño carta con credenciales verticales (9.5 x 14.5 cm)
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     page_width, page_height = letter
     
-    # Configuración de layout: 1 columna x 2 filas = 2 credenciales por página
+    # Configuración de layout: 2 columnas x 1 fila = 2 credenciales por página (verticales)
     margin = 10 * mm
-    cred_width = 145 * mm   # 14.5 cm
-    cred_height = 95 * mm   # 9.5 cm
-    spacing_y = 10 * mm
+    cred_width = 95 * mm    # 9.5 cm ancho
+    cred_height = 145 * mm  # 14.5 cm alto
+    spacing_x = 10 * mm
     
-    cols = 1
-    rows = 2
+    cols = 2
+    rows = 1
     
     for i, acred in enumerate(acreditaciones):
         # Calcular posición en la página (1 columna x 2 filas)
