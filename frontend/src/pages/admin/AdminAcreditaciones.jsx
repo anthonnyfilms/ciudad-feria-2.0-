@@ -41,7 +41,7 @@ const AdminAcreditaciones = () => {
     descripcion: ''
   });
 
-  const zonasDisponibles = ['Backstage', 'VIP', 'Prensa', 'General', 'Escenario', 'Camerinos', 'Área de Comida', 'Estacionamiento'];
+  const zonasDisponibles = ['Todos los Eventos', 'Backstage', 'VIP', 'Prensa', 'General', 'Escenario', 'Camerinos', 'Área de Comida', 'Estacionamiento'];
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
