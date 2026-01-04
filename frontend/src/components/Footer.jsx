@@ -36,18 +36,13 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2">
               <li>
+                <a href="/" className="text-foreground/70 hover:text-primary transition-colors">
+                  Inicio
+                </a>
+              </li>
+              <li>
                 <a href="/eventos" className="text-foreground/70 hover:text-primary transition-colors">
                   Ver Eventos
-                </a>
-              </li>
-              <li>
-                <a href="/mis-entradas" className="text-foreground/70 hover:text-primary transition-colors">
-                  Mis Entradas
-                </a>
-              </li>
-              <li>
-                <a href="/validar" className="text-foreground/70 hover:text-primary transition-colors">
-                  Validar Entrada
                 </a>
               </li>
             </ul>
