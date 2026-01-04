@@ -45,7 +45,7 @@ const AdminCompras = () => {
       const [comprasRes, eventosRes] = await Promise.all([
         axios.get(`${API}/admin/compras`, {
           params: {
-            evento_id: eventoFiltro || undefined,
+            evento_id: eventoFiltro && eventoFiltro !== 'todos' ? eventoFiltro : undefined,
             estado: estadoFiltro || undefined
           },
           headers: { Authorization: `Bearer ${token}` }
@@ -61,6 +61,61 @@ const AdminCompras = () => {
       setLoading(false);
     }
   };
+
+  // Función para exportar a Excel
+  const exportarExcel = () => {
+    const datosExportar = comprasFiltradas.map(compra => ({
+      'Evento': compra.evento_nombre || 'Sin evento',
+      'Nombre': compra.nombre_comprador,
+      'Email': compra.email_comprador,
+      'Teléfono': compra.telefono_comprador || '',
+      'Cantidad': compra.cantidad,
+      'Total': `$${compra.precio_total}`,
+      'Estado': compra.estado,
+      'Método de Pago': compra.metodo_pago,
+      'Fecha': new Date(compra.fecha_compra).toLocaleDateString('es-VE'),
+      'Código': compra.codigo_alfanumerico || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(datosExportar);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Compras');
+    
+    // Ajustar ancho de columnas
+    ws['!cols'] = [
+      { wch: 25 }, // Evento
+      { wch: 25 }, // Nombre
+      { wch: 30 }, // Email
+      { wch: 15 }, // Teléfono
+      { wch: 10 }, // Cantidad
+      { wch: 12 }, // Total
+      { wch: 12 }, // Estado
+      { wch: 15 }, // Método
+      { wch: 12 }, // Fecha
+      { wch: 15 }, // Código
+    ];
+
+    const nombreArchivo = eventoFiltro && eventoFiltro !== 'todos' 
+      ? `compras_${eventos.find(e => e.id === eventoFiltro)?.nombre?.replace(/\s+/g, '_') || 'evento'}.xlsx`
+      : 'compras_todos_eventos.xlsx';
+    
+    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(data, nombreArchivo);
+    
+    toast.success(`Excel exportado: ${datosExportar.length} registros`);
+  };
+
+  // Filtrar compras localmente también
+  const comprasFiltradas = compras.filter(compra => {
+    if (eventoFiltro && eventoFiltro !== 'todos' && compra.evento_id !== eventoFiltro) {
+      return false;
+    }
+    if (estadoFiltro && compra.estado !== estadoFiltro) {
+      return false;
+    }
+    return true;
+  });
 
   const handleAprobar = async (entradaIds) => {
     const token = localStorage.getItem('admin_token');
