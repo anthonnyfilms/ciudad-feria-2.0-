@@ -13,9 +13,11 @@ const AdminConfiguracion = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [config, setConfig] = useState({
     banner_principal: '',
     logo: '',
+    imagen_fondo_home: '',
     descripcion_inicio: 'Vive la tradición, cultura y alegría de la feria más importante del Táchira. Asegura tus entradas digitales con códigos QR únicos e incopiables.',
     color_primario: '#FACC15',
     color_secundario: '#3B82F6',
