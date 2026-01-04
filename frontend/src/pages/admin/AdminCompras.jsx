@@ -307,15 +307,15 @@ const AdminCompras = () => {
               </motion.div>
             )}
 
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-4 mb-6 flex-wrap">
               <select
                 value={eventoFiltro}
                 onChange={(e) => setEventoFiltro(e.target.value)}
-                className="bg-input border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary outline-none"
+                className="bg-input border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary outline-none min-w-[200px]"
               >
-                <option value="">Todos los eventos</option>
+                <option value="todos">📊 Todos los eventos</option>
                 {eventos.map((evento) => (
-                  <option key={evento.id} value={evento.id}>{evento.nombre}</option>
+                  <option key={evento.id} value={evento.id}>🎪 {evento.nombre}</option>
                 ))}
               </select>
 
@@ -325,9 +325,28 @@ const AdminCompras = () => {
                 className="bg-input border border-border rounded-xl px-4 py-3 text-foreground focus:border-primary outline-none"
               >
                 <option value="">Todos los estados</option>
-                <option value="pendiente">Pendientes</option>
-                <option value="aprobado">Aprobados</option>
+                <option value="pendiente">🟡 Pendientes</option>
+                <option value="aprobado">✅ Aprobados</option>
               </select>
+
+              <button
+                onClick={exportarExcel}
+                disabled={comprasFiltradas.length === 0}
+                className="bg-green-600 text-white px-5 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-green-700 disabled:opacity-50 transition-colors"
+              >
+                <FileSpreadsheet className="w-5 h-5" />
+                Exportar Excel ({comprasFiltradas.length})
+              </button>
+            </div>
+
+            {/* Resumen de filtro */}
+            <div className="bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 mb-6 flex items-center justify-between">
+              <span className="text-foreground/80">
+                Mostrando <strong>{comprasFiltradas.length}</strong> compras
+                {eventoFiltro && eventoFiltro !== 'todos' && (
+                  <> del evento <strong>{eventos.find(e => e.id === eventoFiltro)?.nombre}</strong></>
+                )}
+              </span>
             </div>
           </div>
 
