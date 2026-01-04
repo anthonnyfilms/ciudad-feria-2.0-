@@ -10,7 +10,6 @@ const Navbar = () => {
   const links = [
     { path: '/', label: 'Inicio' },
     { path: '/eventos', label: 'Eventos' },
-    { path: '/mis-entradas', label: 'Mis Entradas' },
   ];
 
   return (

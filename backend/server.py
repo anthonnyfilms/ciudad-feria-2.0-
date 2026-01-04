@@ -2286,9 +2286,9 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
 
-# Tamaño de credencial: 14.5 cm x 9.5 cm
-CREDENCIAL_WIDTH = 145 * mm  # 14.5 cm
-CREDENCIAL_HEIGHT = 95 * mm  # 9.5 cm
+# Tamaño de credencial: 14.5 cm (alto) x 9.5 cm (ancho) - formato vertical/portrait
+CREDENCIAL_WIDTH = 95 * mm   # 9.5 cm ancho
+CREDENCIAL_HEIGHT = 145 * mm  # 14.5 cm alto
 
 @api_router.get("/admin/acreditaciones/{acreditacion_id}/pdf")
 async def generar_pdf_acreditacion(acreditacion_id: str, current_user: str = Depends(get_current_user)):
